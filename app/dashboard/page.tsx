@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import DashboardHeader from "@/components/dashboard/dashboard-header"
 import MonthlySpendCard from "@/components/dashboard/monthly-spend-card"
 import FiltersBar from "@/components/dashboard/filters-bar"
-import EmailToolTable from "@/components/dashboard/email-tool-table"
+import ToolsOverviewTable from "@/components/dashboard/tools-overview-table"
 import SavingsOpportunities from "@/components/dashboard/savings-opportunities"
 
 export default async function DashboardPage() {
@@ -41,40 +41,45 @@ export default async function DashboardPage() {
     }
 
     // Fetch dashboard data using Supabase client
-    const [subscriptionsResult, emailToolResult] = await Promise.all([
+    const [subscriptionsResult, toolsResult, projectToolsResult, projectsResult] = await Promise.all([
       // Get subscription data
       supabase
         .from('subscriptions')
-        .select('cost, billing_cycle, status')
+        .select('cost, billing_cycle, status, renewal_date, tool_account_id')
         .eq('user_id', user.id),
 
-      // Get email-tool mapping data with joins - FIXED: Now includes base_cost from tools
+      // Get tools with tool accounts
       supabase
-        .from('emails')
+        .from('tools')
         .select(`
-          email,
+          id,
+          name,
+          category,
+          base_cost,
           tool_accounts(
             id,
-            tools(
-              id,
-              name,
-              category,
-              base_cost
-            ),
-            subscriptions(
-              id,
-              cost,
-              status,
-              billing_cycle,
-              renewal_date
-            )
+            email_id
           )
         `)
+        .eq('user_id', user.id),
+
+      // Get project-tool mappings
+      supabase
+        .from('project_tools')
+        .select('project_id, tool_account_id')
+        .eq('user_id', user.id),
+
+      // Get projects
+      supabase
+        .from('projects')
+        .select('id, name')
         .eq('user_id', user.id)
     ])
 
     console.log("📊 Subscriptions result:", subscriptionsResult)
-    console.log("📧 Email tool result:", emailToolResult)
+    console.log("🔧 Tools result:", toolsResult)
+    console.log("🔗 Project tools result:", projectToolsResult)
+    console.log("📁 Projects result:", projectsResult)
 
     // Process subscription data for summary cards
     let totalSpend = 0
@@ -97,66 +102,74 @@ export default async function DashboardPage() {
       })
     }
 
-    // Process email-tool data and include base_cost from tools
-    const emailToolData = []
+    // Process tools overview data
+    const toolsOverviewData = []
     
-    if (emailToolResult.data) {
-      for (const email of emailToolResult.data) {
-        if (email.tool_accounts && email.tool_accounts.length > 0) {
-          for (const toolAccount of email.tool_accounts) {
-            if (toolAccount.subscriptions && toolAccount.subscriptions.length > 0) {
-              // Tool has subscription(s) - use subscription cost
-              for (const subscription of toolAccount.subscriptions) {
-                const subscriptionCost = parseFloat(subscription.cost) || 0
-                
-                // Add subscription cost to total spend
-                if (subscription.status === 'active') {
-                  if (subscription.billing_cycle === 'monthly') {
-                    totalSpend += subscriptionCost
-                  } else if (subscription.billing_cycle === 'yearly') {
-                    totalSpend += subscriptionCost / 12
-                  }
-                }
+    if (toolsResult.data) {
+      for (const tool of toolsResult.data) {
+        // Get tool accounts for this tool
+        const toolAccounts = tool.tool_accounts || []
+        
+        // Get subscriptions for this tool's accounts
+        const toolSubscriptions = (subscriptionsResult.data || []).filter(sub =>
+          toolAccounts.some(ta => ta.id === sub.tool_account_id)
+        )
 
-                emailToolData.push({
-                  emailAddress: email.email,
-                  toolName: toolAccount.tools?.name || null,
-                  toolCategory: toolAccount.tools?.category || null,
-                  subscriptionCost: subscription.cost?.toString() || null,
-                  subscriptionStatus: subscription.status || null,
-                  billingCycle: subscription.billing_cycle || null,
-                  renewalDate: subscription.renewal_date ? new Date(subscription.renewal_date) : null,
-                  toolId: toolAccount.tools?.id || null,
-                  subscriptionId: subscription.id || null,
-                })
-              }
-            } else {
-              // Tool without subscription - use base_cost from tools table
-              const baseCost = parseFloat(toolAccount.tools?.base_cost) || 0
-              
-              // Add base cost to total spend (assume monthly)
-              if (baseCost > 0) {
-                totalSpend += baseCost
-              }
+        // Calculate cost (subscription cost or base cost)
+        let monthlyCost = 0
+        let renewalDate = null
+        let status = null
 
-              emailToolData.push({
-                emailAddress: email.email,
-                toolName: toolAccount.tools?.name || null,
-                toolCategory: toolAccount.tools?.category || null,
-                subscriptionCost: toolAccount.tools?.base_cost || null,
-                subscriptionStatus: baseCost > 0 ? 'active' : null,
-                billingCycle: baseCost > 0 ? 'monthly' : null,
-                renewalDate: null,
-                toolId: toolAccount.tools?.id || null,
-                subscriptionId: null,
-              })
-            }
-          }
+        if (toolSubscriptions.length > 0) {
+          // Use subscription data
+          const activeSub = toolSubscriptions.find(sub => sub.status === 'active') || toolSubscriptions[0]
+          const cost = parseFloat(activeSub.cost) || 0
+          monthlyCost = activeSub.billing_cycle === 'yearly' ? cost / 12 : cost
+          renewalDate = activeSub.renewal_date
+          status = activeSub.status
+        } else {
+          // Use base cost
+          monthlyCost = parseFloat(tool.base_cost) || 0
+          status = monthlyCost > 0 ? 'active' : null
+        }
+
+        // Add to total spend
+        if (monthlyCost > 0 && status === 'active') {
+          totalSpend += monthlyCost
+        }
+
+        // Get project mappings for this tool
+        const toolAccountIds = toolAccounts.map(ta => ta.id)
+        const projectMappings = (projectToolsResult.data || []).filter(pt =>
+          toolAccountIds.includes(pt.tool_account_id)
+        )
+
+        // Get unique project IDs and names
+        const projectIds = [...new Set(projectMappings.map(pm => pm.project_id))]
+        const projects = (projectsResult.data || [])
+          .filter(project => projectIds.includes(project.id))
+          .map(project => ({
+            id: project.id,
+            name: project.name
+          }))
+
+        // Only include tools that have accounts (are actually being used)
+        if (toolAccounts.length > 0) {
+          toolsOverviewData.push({
+            toolId: tool.id,
+            toolName: tool.name,
+            toolCategory: tool.category,
+            monthlyCost,
+            renewalDate: renewalDate ? new Date(renewalDate) : null,
+            projectCount: projects.length,
+            projects,
+            status
+          })
         }
       }
     }
 
-    console.log("📋 Processed email tool data:", emailToolData)
+    console.log("📋 Processed tools overview data:", toolsOverviewData)
 
     return (
       <div className="min-h-screen bg-background">
@@ -173,8 +186,8 @@ export default async function DashboardPage() {
           {/* Filters */}
           <FiltersBar />
 
-          {/* Email-Tool Table */}
-          <EmailToolTable data={emailToolData} />
+          {/* Tools Overview */}
+          <ToolsOverviewTable data={toolsOverviewData} />
 
           {/* Savings Opportunities */}
           <SavingsOpportunities />
