@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2, ArrowLeft } from "lucide-react"
+import { Loader2, ArrowLeft, Plus, X } from "lucide-react"
 import { createTool } from "@/lib/tools/actions"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -59,12 +59,29 @@ function SubmitButton({ isEditing }: { isEditing?: boolean }) {
 export default function ToolForm({ userEmails, initialData, isEditing = false }: ToolFormProps) {
   const router = useRouter()
   const [state, formAction] = useActionState(createTool, null)
+  const [newEmail, setNewEmail] = useState("")
+  const [tempEmails, setTempEmails] = useState<string[]>([])
 
   useEffect(() => {
     if (state?.success) {
       router.push("/tools")
     }
   }, [state, router])
+
+  const addTempEmail = () => {
+    if (newEmail && !tempEmails.includes(newEmail) && !userEmails.some(e => e.email === newEmail)) {
+      setTempEmails([...tempEmails, newEmail])
+      setNewEmail("")
+    }
+  }
+
+  const removeTempEmail = (email: string) => {
+    setTempEmails(tempEmails.filter(e => e !== email))
+  }
+
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
 
   return (
     <Card className="border-2 border-transparent bg-gradient-to-r from-[#002F71] to-[#0A4BA0] p-[2px]">
@@ -176,24 +193,92 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
               </p>
             </div>
 
-            {userEmails.length > 0 && (
-              <div className="space-y-4">
-                <Label>Assign to Email Accounts</Label>
-                <div className="space-y-3">
-                  {userEmails.map((email) => (
-                    <div key={email.id} className="flex items-center space-x-2">
-                      <Checkbox id={`email-${email.id}`} name="emailIds" value={email.id} />
-                      <Label htmlFor={`email-${email.id}`} className="flex-1">
-                        {email.email}
-                        {email.isPrimary && (
-                          <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded">Primary</span>
-                        )}
-                      </Label>
-                    </div>
-                  ))}
+            {/* Enhanced Email Management */}
+            <div className="space-y-4">
+              <Label>Email Accounts *</Label>
+              
+              {/* Add New Email */}
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Input
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Add new email (e.g., work@company.com)"
+                    type="email"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addTempEmail}
+                    disabled={!newEmail || !isValidEmail(newEmail)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Select which email accounts this tool should be associated with
+                  Add emails you use for different tools (personal, work, etc.)
+                </p>
+              </div>
+
+              {/* Existing Emails */}
+              <div className="space-y-3">
+                {userEmails.map((email) => (
+                  <div key={email.id} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`email-${email.id}`} 
+                      name="emailIds" 
+                      value={email.id}
+                      defaultChecked={email.isPrimary && !isEditing} // Auto-select primary for new tools
+                    />
+                    <Label htmlFor={`email-${email.id}`} className="flex-1">
+                      {email.email}
+                      {email.isPrimary && (
+                        <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded">Primary</span>
+                      )}
+                    </Label>
+                  </div>
+                ))}
+
+                {/* Temporary Emails */}
+                {tempEmails.map((email, index) => (
+                  <div key={`temp-${index}`} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`temp-email-${index}`} 
+                      name="newEmails" 
+                      value={email}
+                      defaultChecked={true}
+                    />
+                    <Label htmlFor={`temp-email-${index}`} className="flex-1">
+                      {email}
+                      <span className="ml-2 text-xs bg-green-500/10 text-green-600 px-2 py-1 rounded">New</span>
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeTempEmail(email)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Select which email accounts this tool should be associated with (at least one required)
+              </p>
+            </div>
+
+            {/* Show warning if no emails exist */}
+            {userEmails.length === 0 && tempEmails.length === 0 && (
+              <div className="bg-orange-50 border border-orange-200 rounded-md p-4">
+                <p className="text-sm text-orange-800">
+                  Please add at least one email address above, or 
+                  <Link href="/settings" className="underline ml-1">
+                    add email in settings
+                  </Link>
                 </p>
               </div>
             )}

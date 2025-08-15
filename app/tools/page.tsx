@@ -58,9 +58,13 @@ export default async function ToolsPage() {
         .filter(account => account.tool_id === tool.id)
         .map(account => account.id)
 
-      const totalCost = (subscriptionsResult.data || [])
+      const subscriptionCost = (subscriptionsResult.data || [])
         .filter(sub => toolAccountIds.includes(sub.tool_account_id))
         .reduce((sum, sub) => sum + (parseFloat(sub.cost) || 0), 0)
+
+      // FIXED: Use base_cost when no subscriptions exist
+      const baseCost = parseFloat(tool.base_cost) || 0
+      const totalCost = subscriptionCost > 0 ? subscriptionCost : baseCost
 
       return {
         id: tool.id,

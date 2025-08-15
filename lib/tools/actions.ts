@@ -44,8 +44,20 @@ export async function createTool(prevState: any, formData: FormData) {
       baseCost: formData.get("baseCost") as string,
     }
 
-    // Get selected email IDs
+    // Get selected email IDs and new emails
     const emailIds = formData.getAll("emailIds") as string[]
+    const newEmails = formData.getAll("newEmails") as string[]
+
+    console.log("📧 Email IDs:", emailIds)
+    console.log("📧 New emails:", newEmails)
+
+    // ENHANCED: Require at least one email (existing or new)
+    const toolId = formData.get("id") as string
+    if (!toolId && emailIds.length === 0 && newEmails.length === 0) {
+      return {
+        error: "Please select at least one email to associate with this tool.",
+      }
+    }
 
     const result = toolSchema.safeParse(rawData)
     if (!result.success) {
@@ -55,9 +67,6 @@ export async function createTool(prevState: any, formData: FormData) {
     }
 
     const validatedData = result.data
-
-    // Check if editing existing tool
-    const toolId = formData.get("id") as string
     let tool
 
     if (toolId) {
@@ -136,8 +145,58 @@ export async function createTool(prevState: any, formData: FormData) {
       }
     }
 
-    // Handle email assignments
-    if (emailIds.length > 0) {
+    // ENHANCED: Handle new emails first
+    const allEmailIds = [...emailIds]
+    
+    if (newEmails.length > 0) {
+      // Validate new emails
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      const invalidEmails = newEmails.filter(email => !emailRegex.test(email))
+      
+      if (invalidEmails.length > 0) {
+        return { error: `Invalid email format: ${invalidEmails.join(", ")}` }
+      }
+
+      // Check for duplicate emails
+      const { data: existingEmails, error: checkError } = await supabase
+        .from('emails')
+        .select('email')
+        .eq('user_id', user.id)
+        .in('email', newEmails)
+
+      if (checkError) {
+        console.error("Email check error:", checkError)
+        return { error: "Failed to verify emails. Please try again." }
+      }
+
+      const duplicateEmails = existingEmails?.map(e => e.email) || []
+      const uniqueNewEmails = newEmails.filter(email => !duplicateEmails.includes(email))
+
+      // Create new emails
+      if (uniqueNewEmails.length > 0) {
+        const newEmailsData = uniqueNewEmails.map(email => ({
+          user_id: user.id,
+          email: email,
+          is_primary: false, // New emails are not primary by default
+        }))
+
+        const { data: createdEmails, error: emailInsertError } = await supabase
+          .from('emails')
+          .insert(newEmailsData)
+          .select('id')
+
+        if (emailInsertError) {
+          console.error("Email creation error:", emailInsertError)
+          return { error: "Failed to create new emails. Please try again." }
+        }
+
+        // Add new email IDs to the list
+        allEmailIds.push(...createdEmails.map(email => email.id))
+      }
+    }
+
+    // Handle email assignments - REQUIRED for all tools
+    if (allEmailIds.length > 0) {
       // Remove existing tool accounts if editing
       if (toolId) {
         const { error: deleteError } = await supabase
@@ -151,8 +210,8 @@ export async function createTool(prevState: any, formData: FormData) {
         }
       }
 
-      // Create new tool accounts for selected emails
-      const toolAccountsData = emailIds.map((emailId) => ({
+      // Create new tool accounts for all emails (existing + new)
+      const toolAccountsData = allEmailIds.map((emailId) => ({
         user_id: user.id,
         tool_id: tool.id,
         email_id: emailId,
@@ -165,7 +224,7 @@ export async function createTool(prevState: any, formData: FormData) {
 
       if (accountsError) {
         console.error("Tool accounts creation error:", accountsError)
-        return { error: "Tool created but failed to assign to emails. Please edit the tool to assign emails." }
+        return { error: "Failed to assign tool to emails. Please try again." }
       }
     }
 
