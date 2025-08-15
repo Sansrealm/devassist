@@ -18,7 +18,7 @@ export default async function DashboardPage() {
     redirect("/sign-in")
   }
 
-  console.log("🔍 User authenticated:", user.id)
+  console.log("🔑 User authenticated:", user.id)
 
   try {
     // Ensure user has profile - create if missing
@@ -40,7 +40,7 @@ export default async function DashboardPage() {
       })
     }
 
-    // Fetch dashboard data using Supabase client (matches your schema)
+    // Fetch dashboard data using Supabase client
     const [subscriptionsResult, emailToolResult] = await Promise.all([
       // Get subscription data
       supabase
@@ -48,7 +48,7 @@ export default async function DashboardPage() {
         .select('cost, billing_cycle, status')
         .eq('user_id', user.id),
 
-      // Get email-tool mapping data with joins
+      // Get email-tool mapping data with joins - FIXED: Now includes base_cost from tools
       supabase
         .from('emails')
         .select(`
@@ -58,7 +58,8 @@ export default async function DashboardPage() {
             tools(
               id,
               name,
-              category
+              category,
+              base_cost
             ),
             subscriptions(
               id,
@@ -96,7 +97,7 @@ export default async function DashboardPage() {
       })
     }
 
-    // Process email-tool data for table
+    // Process email-tool data and include base_cost from tools
     const emailToolData = []
     
     if (emailToolResult.data) {
@@ -104,7 +105,19 @@ export default async function DashboardPage() {
         if (email.tool_accounts && email.tool_accounts.length > 0) {
           for (const toolAccount of email.tool_accounts) {
             if (toolAccount.subscriptions && toolAccount.subscriptions.length > 0) {
+              // Tool has subscription(s) - use subscription cost
               for (const subscription of toolAccount.subscriptions) {
+                const subscriptionCost = parseFloat(subscription.cost) || 0
+                
+                // Add subscription cost to total spend
+                if (subscription.status === 'active') {
+                  if (subscription.billing_cycle === 'monthly') {
+                    totalSpend += subscriptionCost
+                  } else if (subscription.billing_cycle === 'yearly') {
+                    totalSpend += subscriptionCost / 12
+                  }
+                }
+
                 emailToolData.push({
                   emailAddress: email.email,
                   toolName: toolAccount.tools?.name || null,
@@ -118,14 +131,21 @@ export default async function DashboardPage() {
                 })
               }
             } else {
-              // Tool account without subscription
+              // Tool without subscription - use base_cost from tools table
+              const baseCost = parseFloat(toolAccount.tools?.base_cost) || 0
+              
+              // Add base cost to total spend (assume monthly)
+              if (baseCost > 0) {
+                totalSpend += baseCost
+              }
+
               emailToolData.push({
                 emailAddress: email.email,
                 toolName: toolAccount.tools?.name || null,
                 toolCategory: toolAccount.tools?.category || null,
-                subscriptionCost: null,
-                subscriptionStatus: null,
-                billingCycle: null,
+                subscriptionCost: toolAccount.tools?.base_cost || null,
+                subscriptionStatus: baseCost > 0 ? 'active' : null,
+                billingCycle: baseCost > 0 ? 'monthly' : null,
                 renewalDate: null,
                 toolId: toolAccount.tools?.id || null,
                 subscriptionId: null,
