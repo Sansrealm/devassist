@@ -1,9 +1,6 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { db } from "@/lib/db"
-import { profiles, emails, projects, tools, subscriptions, projectTools, activity } from "@/lib/db/schema"
-import { eq, and } from "drizzle-orm"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
@@ -46,27 +43,26 @@ export async function updateProfile(prevState: any, formData: FormData) {
 
     const validatedData = result.data
 
-    // Update or create profile
-    await db
-      .insert(profiles)
-      .values({
-        id: user.id,
-        userId: user.id,
-        firstName: validatedData.firstName || null,
-        lastName: validatedData.lastName || null,
-        avatarUrl: validatedData.avatarUrl || null,
+    // Update or create profile using Supabase upsert
+    const { error: upsertError } = await supabase
+      .from('profiles')
+      .upsert({
+        id: crypto.randomUUID(), // Will be ignored if record exists
+        user_id: user.id,
+        first_name: validatedData.firstName || null,
+        last_name: validatedData.lastName || null,
+        avatar_url: validatedData.avatarUrl || null,
         timezone: validatedData.timezone || "UTC",
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id', // Conflict resolution on user_id
+        ignoreDuplicates: false
       })
-      .onConflictDoUpdate({
-        target: profiles.id,
-        set: {
-          firstName: validatedData.firstName || null,
-          lastName: validatedData.lastName || null,
-          avatarUrl: validatedData.avatarUrl || null,
-          timezone: validatedData.timezone || "UTC",
-          updatedAt: new Date(),
-        },
-      })
+
+    if (upsertError) {
+      console.error("Profile upsert error:", upsertError)
+      return { error: "Failed to update profile. Please try again." }
+    }
 
     revalidatePath("/settings")
 
@@ -100,29 +96,52 @@ export async function addEmail(email: string) {
     }
 
     // Check if email already exists
-    const existingEmail = await db.select().from(emails).where(eq(emails.email, email)).limit(1)
+    const { data: existingEmail, error: selectError } = await supabase
+      .from('emails')
+      .select('id')
+      .eq('email', email)
+      .limit(1)
+      .single()
 
-    if (existingEmail.length > 0) {
+    if (selectError && selectError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error("Email check error:", selectError)
+      return { error: "Failed to check email. Please try again." }
+    }
+
+    if (existingEmail) {
       return {
         error: "This email address is already registered.",
       }
     }
 
     // Add new email
-    await db.insert(emails).values({
-      userId: user.id,
-      email: email,
-      isPrimary: false,
-      isVerified: false,
-    })
+    const { error: insertError } = await supabase
+      .from('emails')
+      .insert({
+        user_id: user.id,
+        email: email,
+        is_primary: false,
+        is_verified: false,
+      })
+
+    if (insertError) {
+      console.error("Add email error:", insertError)
+      return { error: "Failed to add email. Please try again." }
+    }
 
     // Log activity
-    await db.insert(activity).values({
-      userId: user.id,
-      type: "project_updated",
-      description: `Added new email: ${email}`,
-      metadata: JSON.stringify({ email }),
-    })
+    const { error: activityError } = await supabase
+      .from('activity')
+      .insert({
+        user_id: user.id,
+        type: 'project_updated', // Keeping original type for consistency
+        description: `Added new email: ${email}`,
+        metadata: JSON.stringify({ email }),
+      })
+
+    if (activityError) {
+      console.error("Activity log error:", activityError)
+    }
 
     revalidatePath("/settings")
 
@@ -148,14 +167,28 @@ export async function setPrimaryEmail(emailId: string) {
       redirect("/sign-in")
     }
 
-    // Unset all primary emails
-    await db.update(emails).set({ isPrimary: false }).where(eq(emails.userId, user.id))
+    // Unset all primary emails for the user
+    const { error: unsetError } = await supabase
+      .from('emails')
+      .update({ is_primary: false })
+      .eq('user_id', user.id)
+
+    if (unsetError) {
+      console.error("Unset primary emails error:", unsetError)
+      return { error: "Failed to update primary email. Please try again." }
+    }
 
     // Set new primary email
-    await db
-      .update(emails)
-      .set({ isPrimary: true })
-      .where(and(eq(emails.id, emailId), eq(emails.userId, user.id)))
+    const { error: setPrimaryError } = await supabase
+      .from('emails')
+      .update({ is_primary: true })
+      .eq('id', emailId)
+      .eq('user_id', user.id) // Security: ensure user owns the email
+
+    if (setPrimaryError) {
+      console.error("Set primary email error:", setPrimaryError)
+      return { error: "Failed to set primary email. Please try again." }
+    }
 
     revalidatePath("/settings")
 
@@ -182,29 +215,47 @@ export async function deleteEmail(emailId: string) {
     }
 
     // Check if it's the primary email
-    const [email] = await db
-      .select({ isPrimary: emails.isPrimary, email: emails.email })
-      .from(emails)
-      .where(and(eq(emails.id, emailId), eq(emails.userId, user.id)))
+    const { data: email, error: selectError } = await supabase
+      .from('emails')
+      .select('is_primary, email')
+      .eq('id', emailId)
+      .eq('user_id', user.id) // Security: ensure user owns the email
+      .single()
 
-    if (!email) {
+    if (selectError || !email) {
+      console.error("Email not found error:", selectError)
       return { error: "Email not found" }
     }
 
-    if (email.isPrimary) {
+    if (email.is_primary) {
       return { error: "Cannot delete primary email address" }
     }
 
     // Delete email
-    await db.delete(emails).where(and(eq(emails.id, emailId), eq(emails.userId, user.id)))
+    const { error: deleteError } = await supabase
+      .from('emails')
+      .delete()
+      .eq('id', emailId)
+      .eq('user_id', user.id)
+
+    if (deleteError) {
+      console.error("Delete email error:", deleteError)
+      return { error: "Failed to delete email. Please try again." }
+    }
 
     // Log activity
-    await db.insert(activity).values({
-      userId: user.id,
-      type: "project_updated",
-      description: `Deleted email: ${email.email}`,
-      metadata: JSON.stringify({ emailId, email: email.email }),
-    })
+    const { error: activityError } = await supabase
+      .from('activity')
+      .insert({
+        user_id: user.id,
+        type: 'project_updated', // Keeping original type for consistency
+        description: `Deleted email: ${email.email}`,
+        metadata: JSON.stringify({ emailId, email: email.email }),
+      })
+
+    if (activityError) {
+      console.error("Activity log error:", activityError)
+    }
 
     revalidatePath("/settings")
 
@@ -232,10 +283,16 @@ export async function resendVerification(emailId: string) {
 
     // In a real implementation, you would send a verification email here
     // For now, we'll just mark it as verified for demo purposes
-    await db
-      .update(emails)
-      .set({ isVerified: true })
-      .where(and(eq(emails.id, emailId), eq(emails.userId, user.id)))
+    const { error: updateError } = await supabase
+      .from('emails')
+      .update({ is_verified: true })
+      .eq('id', emailId)
+      .eq('user_id', user.id) // Security: ensure user owns the email
+
+    if (updateError) {
+      console.error("Resend verification error:", updateError)
+      return { error: "Failed to update verification status. Please try again." }
+    }
 
     revalidatePath("/settings")
 
@@ -268,49 +325,71 @@ export async function exportUserData(selectedData: Record<string, boolean>) {
 
     // Export profile data
     if (selectedData.profile) {
-      const [profile] = await db.select().from(profiles).where(eq(profiles.userId, user.id))
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
 
       exportData.profile = profile
     }
 
     // Export emails
     if (selectedData.emails) {
-      const userEmails = await db.select().from(emails).where(eq(emails.userId, user.id))
+      const { data: userEmails } = await supabase
+        .from('emails')
+        .select('*')
+        .eq('user_id', user.id)
 
       exportData.emails = userEmails
     }
 
     // Export projects
     if (selectedData.projects) {
-      const userProjects = await db.select().from(projects).where(eq(projects.userId, user.id))
+      const { data: userProjects } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', user.id)
 
       exportData.projects = userProjects
     }
 
     // Export tools
     if (selectedData.tools) {
-      const userTools = await db.select().from(tools).where(eq(tools.userId, user.id))
+      const { data: userTools } = await supabase
+        .from('tools')
+        .select('*')
+        .eq('user_id', user.id)
 
       exportData.tools = userTools
     }
 
     // Export subscriptions
     if (selectedData.subscriptions) {
-      const userSubscriptions = await db.select().from(subscriptions).where(eq(subscriptions.userId, user.id))
+      const { data: userSubscriptions } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
 
       exportData.subscriptions = userSubscriptions
     }
 
     // Export project-tool mappings
     if (selectedData.mappings) {
-      const userMappings = await db.select().from(projectTools).where(eq(projectTools.userId, user.id))
+      const { data: userMappings } = await supabase
+        .from('project_tools')
+        .select('*')
+        .eq('user_id', user.id)
 
       exportData.mappings = userMappings
     }
 
     // Export activity log
     if (selectedData.activity) {
-      const userActivity = await db.select().from(activity).where(eq(activity.userId, user.id))
+      const { data: userActivity } = await supabase
+        .from('activity')
+        .select('*')
+        .eq('user_id', user.id)
 
       exportData.activity = userActivity
     }

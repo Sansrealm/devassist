@@ -1,9 +1,6 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { db } from "@/lib/db"
-import { tools, toolAccounts, activity } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
@@ -64,72 +61,112 @@ export async function createTool(prevState: any, formData: FormData) {
     let tool
 
     if (toolId) {
-      // Update existing tool
-      const [updatedTool] = await db
-        .update(tools)
-        .set({
+      // Update existing tool using Supabase
+      const { data: updatedTool, error: updateError } = await supabase
+        .from('tools')
+        .update({
           name: validatedData.name,
           description: validatedData.description || null,
           category: validatedData.category || null,
-          websiteUrl: validatedData.websiteUrl || null,
-          logoUrl: validatedData.logoUrl || null,
-          baseCost: validatedData.baseCost || null,
-          updatedAt: new Date(),
+          website_url: validatedData.websiteUrl || null,
+          logo_url: validatedData.logoUrl || null,
+          base_cost: validatedData.baseCost || null,
+          updated_at: new Date().toISOString(),
         })
-        .where(eq(tools.id, toolId))
-        .returning()
+        .eq('id', toolId)
+        .eq('user_id', user.id) // Security: ensure user owns the tool
+        .select()
+        .single()
+
+      if (updateError) {
+        console.error("Tool update error:", updateError)
+        return { error: "Failed to update tool. Please try again." }
+      }
 
       tool = updatedTool
 
       // Log activity
-      await db.insert(activity).values({
-        userId: user.id,
-        type: "tool_updated",
-        description: `Updated tool: ${validatedData.name}`,
-        metadata: JSON.stringify({ toolId: tool.id }),
-      })
+      const { error: activityError } = await supabase
+        .from('activity')
+        .insert({
+          user_id: user.id,
+          type: 'tool_updated',
+          description: `Updated tool: ${validatedData.name}`,
+          metadata: JSON.stringify({ toolId: tool.id }),
+        })
+
+      if (activityError) {
+        console.error("Activity log error:", activityError)
+      }
     } else {
-      // Create new tool
-      const [newTool] = await db
-        .insert(tools)
-        .values({
-          userId: user.id,
+      // Create new tool using Supabase
+      const { data: newTool, error: insertError } = await supabase
+        .from('tools')
+        .insert({
+          user_id: user.id,
           name: validatedData.name,
           description: validatedData.description || null,
           category: validatedData.category || null,
-          websiteUrl: validatedData.websiteUrl || null,
-          logoUrl: validatedData.logoUrl || null,
-          baseCost: validatedData.baseCost || null,
+          website_url: validatedData.websiteUrl || null,
+          logo_url: validatedData.logoUrl || null,
+          base_cost: validatedData.baseCost || null,
         })
-        .returning()
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error("Tool creation error:", insertError)
+        return { error: "Failed to create tool. Please try again." }
+      }
 
       tool = newTool
 
       // Log activity
-      await db.insert(activity).values({
-        userId: user.id,
-        type: "tool_added",
-        description: `Added new tool: ${validatedData.name}`,
-        metadata: JSON.stringify({ toolId: tool.id }),
-      })
+      const { error: activityError } = await supabase
+        .from('activity')
+        .insert({
+          user_id: user.id,
+          type: 'tool_added',
+          description: `Added new tool: ${validatedData.name}`,
+          metadata: JSON.stringify({ toolId: tool.id }),
+        })
+
+      if (activityError) {
+        console.error("Activity log error:", activityError)
+      }
     }
 
     // Handle email assignments
     if (emailIds.length > 0) {
       // Remove existing tool accounts if editing
       if (toolId) {
-        await db.delete(toolAccounts).where(eq(toolAccounts.toolId, toolId))
+        const { error: deleteError } = await supabase
+          .from('tool_accounts')
+          .delete()
+          .eq('tool_id', toolId)
+          .eq('user_id', user.id)
+
+        if (deleteError) {
+          console.error("Tool accounts deletion error:", deleteError)
+        }
       }
 
       // Create new tool accounts for selected emails
       const toolAccountsData = emailIds.map((emailId) => ({
-        userId: user.id,
-        toolId: tool.id,
-        emailId: emailId,
-        accountName: validatedData.name,
+        user_id: user.id,
+        tool_id: tool.id,
+        email_id: emailId,
+        account_name: validatedData.name,
       }))
 
-      await db.insert(toolAccounts).values(toolAccountsData)
+      const { error: accountsError } = await supabase
+        .from('tool_accounts')
+        .insert(toolAccountsData)
+
+      if (accountsError) {
+        console.error("Tool accounts creation error:", accountsError)
+        return { error: "Tool created but failed to assign to emails. Please edit the tool to assign emails." }
+      }
     }
 
     revalidatePath("/tools")
@@ -158,22 +195,43 @@ export async function deleteTool(toolId: string) {
     }
 
     // Get tool name for activity log
-    const [tool] = await db.select({ name: tools.name }).from(tools).where(eq(tools.id, toolId))
+    const { data: tool, error: selectError } = await supabase
+      .from('tools')
+      .select('name')
+      .eq('id', toolId)
+      .eq('user_id', user.id) // Security: ensure user owns the tool
+      .single()
 
-    if (!tool) {
+    if (selectError || !tool) {
+      console.error("Tool not found error:", selectError)
       return { error: "Tool not found" }
     }
 
-    // Delete tool (cascades to tool_accounts and subscriptions)
-    await db.delete(tools).where(eq(tools.id, toolId))
+    // Delete tool using Supabase (cascades should handle related records)
+    const { error: deleteError } = await supabase
+      .from('tools')
+      .delete()
+      .eq('id', toolId)
+      .eq('user_id', user.id)
+
+    if (deleteError) {
+      console.error("Tool deletion error:", deleteError)
+      return { error: "Failed to delete tool. Please try again." }
+    }
 
     // Log activity
-    await db.insert(activity).values({
-      userId: user.id,
-      type: "tool_removed",
-      description: `Deleted tool: ${tool.name}`,
-      metadata: JSON.stringify({ toolId }),
-    })
+    const { error: activityError } = await supabase
+      .from('activity')
+      .insert({
+        user_id: user.id,
+        type: 'tool_removed',
+        description: `Deleted tool: ${tool.name}`,
+        metadata: JSON.stringify({ toolId }),
+      })
+
+    if (activityError) {
+      console.error("Activity log error:", activityError)
+    }
 
     revalidatePath("/tools")
     revalidatePath("/dashboard")

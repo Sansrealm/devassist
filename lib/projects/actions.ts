@@ -1,9 +1,6 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { db } from "@/lib/db"
-import { projects, activity } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
@@ -48,50 +45,75 @@ export async function createProject(prevState: any, formData: FormData) {
     let project
 
     if (projectId) {
-      // Update existing project
-      const [updatedProject] = await db
-        .update(projects)
-        .set({
+      // Update existing project using Supabase
+      const { data: updatedProject, error: updateError } = await supabase
+        .from('projects')
+        .update({
           name: validatedData.name,
           description: validatedData.description || null,
           status: validatedData.status,
           notes: validatedData.notes || null,
-          updatedAt: new Date(),
+          updated_at: new Date().toISOString(),
         })
-        .where(eq(projects.id, projectId))
-        .returning()
+        .eq('id', projectId)
+        .eq('user_id', user.id) // Security: ensure user owns the project
+        .select()
+        .single()
+
+      if (updateError) {
+        console.error("Project update error:", updateError)
+        return { error: "Failed to update project. Please try again." }
+      }
 
       project = updatedProject
 
       // Log activity
-      await db.insert(activity).values({
-        userId: user.id,
-        type: "project_updated",
-        description: `Updated project: ${validatedData.name}`,
-        metadata: JSON.stringify({ projectId: project.id }),
-      })
+      const { error: activityError } = await supabase
+        .from('activity')
+        .insert({
+          user_id: user.id,
+          type: 'project_updated',
+          description: `Updated project: ${validatedData.name}`,
+          metadata: JSON.stringify({ projectId: project.id }),
+        })
+
+      if (activityError) {
+        console.error("Activity log error:", activityError)
+      }
     } else {
-      // Create new project
-      const [newProject] = await db
-        .insert(projects)
-        .values({
-          userId: user.id,
+      // Create new project using Supabase
+      const { data: newProject, error: insertError } = await supabase
+        .from('projects')
+        .insert({
+          user_id: user.id,
           name: validatedData.name,
           description: validatedData.description || null,
           status: validatedData.status,
           notes: validatedData.notes || null,
         })
-        .returning()
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error("Project creation error:", insertError)
+        return { error: "Failed to create project. Please try again." }
+      }
 
       project = newProject
 
       // Log activity
-      await db.insert(activity).values({
-        userId: user.id,
-        type: "project_created",
-        description: `Created new project: ${validatedData.name}`,
-        metadata: JSON.stringify({ projectId: project.id }),
-      })
+      const { error: activityError } = await supabase
+        .from('activity')
+        .insert({
+          user_id: user.id,
+          type: 'project_created',
+          description: `Created new project: ${validatedData.name}`,
+          metadata: JSON.stringify({ projectId: project.id }),
+        })
+
+      if (activityError) {
+        console.error("Activity log error:", activityError)
+      }
     }
 
     revalidatePath("/projects")
@@ -120,22 +142,43 @@ export async function deleteProject(projectId: string) {
     }
 
     // Get project name for activity log
-    const [project] = await db.select({ name: projects.name }).from(projects).where(eq(projects.id, projectId))
+    const { data: project, error: selectError } = await supabase
+      .from('projects')
+      .select('name')
+      .eq('id', projectId)
+      .eq('user_id', user.id) // Security: ensure user owns the project
+      .single()
 
-    if (!project) {
+    if (selectError || !project) {
+      console.error("Project not found error:", selectError)
       return { error: "Project not found" }
     }
 
-    // Delete project (cascades to project_tools)
-    await db.delete(projects).where(eq(projects.id, projectId))
+    // Delete project using Supabase (cascades should handle related records)
+    const { error: deleteError } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId)
+      .eq('user_id', user.id)
+
+    if (deleteError) {
+      console.error("Project deletion error:", deleteError)
+      return { error: "Failed to delete project. Please try again." }
+    }
 
     // Log activity
-    await db.insert(activity).values({
-      userId: user.id,
-      type: "project_updated",
-      description: `Deleted project: ${project.name}`,
-      metadata: JSON.stringify({ projectId }),
-    })
+    const { error: activityError } = await supabase
+      .from('activity')
+      .insert({
+        user_id: user.id,
+        type: 'project_updated', // Note: keeping original type for consistency
+        description: `Deleted project: ${project.name}`,
+        metadata: JSON.stringify({ projectId }),
+      })
+
+    if (activityError) {
+      console.error("Activity log error:", activityError)
+    }
 
     revalidatePath("/projects")
     revalidatePath("/dashboard")
@@ -160,22 +203,53 @@ export async function updateProjectStatus(projectId: string, status: string) {
 
     const validStatus = z.enum(["active", "paused", "completed", "archived"]).parse(status)
 
-    const [updatedProject] = await db
-      .update(projects)
-      .set({
+    // Get current project info for activity log
+    const { data: currentProject, error: selectError } = await supabase
+      .from('projects')
+      .select('name, status')
+      .eq('id', projectId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (selectError || !currentProject) {
+      console.error("Project not found error:", selectError)
+      return { error: "Project not found" }
+    }
+
+    // Update project status using Supabase
+    const { data: updatedProject, error: updateError } = await supabase
+      .from('projects')
+      .update({
         status: validStatus,
-        updatedAt: new Date(),
+        updated_at: new Date().toISOString(),
       })
-      .where(eq(projects.id, projectId))
-      .returning()
+      .eq('id', projectId)
+      .eq('user_id', user.id)
+      .select()
+      .single()
+
+    if (updateError) {
+      console.error("Project status update error:", updateError)
+      return { error: "Failed to update project status. Please try again." }
+    }
 
     // Log activity
-    await db.insert(activity).values({
-      userId: user.id,
-      type: "project_updated",
-      description: `Changed project status to ${validStatus}: ${updatedProject.name}`,
-      metadata: JSON.stringify({ projectId, oldStatus: status, newStatus: validStatus }),
-    })
+    const { error: activityError } = await supabase
+      .from('activity')
+      .insert({
+        user_id: user.id,
+        type: 'project_updated',
+        description: `Changed project status to ${validStatus}: ${updatedProject.name}`,
+        metadata: JSON.stringify({ 
+          projectId, 
+          oldStatus: currentProject.status, 
+          newStatus: validStatus 
+        }),
+      })
+
+    if (activityError) {
+      console.error("Activity log error:", activityError)
+    }
 
     revalidatePath("/projects")
     revalidatePath("/dashboard")

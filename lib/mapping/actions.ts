@@ -1,12 +1,8 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { db } from "@/lib/db"
-import { projectTools, activity } from "@/lib/db/schema"
-import { eq, and } from "drizzle-orm"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
-import { sql } from "drizzle-orm"
 
 export async function createMapping(projectId: string, toolAccountId: string) {
   try {
@@ -20,35 +16,59 @@ export async function createMapping(projectId: string, toolAccountId: string) {
     }
 
     // Check if mapping already exists
-    const existingMapping = await db
-      .select()
-      .from(projectTools)
-      .where(and(eq(projectTools.projectId, projectId), eq(projectTools.toolAccountId, toolAccountId)))
-      .limit(1)
+    const { data: existingMapping, error: checkError } = await supabase
+      .from('project_tools')
+      .select('id')
+      .eq('project_id', projectId)
+      .eq('tool_account_id', toolAccountId)
+      .eq('user_id', user.id)
+      .single()
 
-    if (existingMapping.length > 0) {
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error("Mapping check error:", checkError)
+      return { error: "Failed to check existing mapping. Please try again." }
+    }
+
+    if (existingMapping) {
       return { error: "Mapping already exists" }
     }
 
     // Create new mapping
-    const [newMapping] = await db
-      .insert(projectTools)
-      .values({
-        userId: user.id,
-        projectId,
-        toolAccountId,
-        isActive: true,
-        usageCount: 0,
+    const { data: newMapping, error: insertError } = await supabase
+      .from('project_tools')
+      .insert({
+        user_id: user.id,
+        project_id: projectId,
+        tool_account_id: toolAccountId,
+        is_active: true,
+        usage_count: 0,
       })
-      .returning()
+      .select()
+      .single()
+
+    if (insertError) {
+      console.error("Mapping creation error:", insertError)
+      return { error: "Failed to create mapping. Please try again." }
+    }
 
     // Log activity
-    await db.insert(activity).values({
-      userId: user.id,
-      type: "project_updated",
-      description: "Created project-tool mapping",
-      metadata: JSON.stringify({ projectId, toolAccountId, mappingId: newMapping.id }),
-    })
+    const { error: activityError } = await supabase
+      .from('activity')
+      .insert({
+        user_id: user.id,
+        type: "project_updated",
+        description: "Created project-tool mapping",
+        metadata: JSON.stringify({ 
+          project_id: projectId, 
+          tool_account_id: toolAccountId, 
+          mapping_id: newMapping.id 
+        }),
+      })
+
+    if (activityError) {
+      console.error("Activity log error:", activityError)
+      // Don't fail the operation if activity logging fails
+    }
 
     revalidatePath("/map")
     revalidatePath("/dashboard")
@@ -71,29 +91,53 @@ export async function deleteMapping(mappingId: string) {
       redirect("/sign-in")
     }
 
-    // Get mapping details for activity log
-    const [mapping] = await db
-      .select({
-        projectId: projectTools.projectId,
-        toolAccountId: projectTools.toolAccountId,
-      })
-      .from(projectTools)
-      .where(eq(projectTools.id, mappingId))
+    // Get mapping details for activity log (ensure user owns it)
+    const { data: mapping, error: fetchError } = await supabase
+      .from('project_tools')
+      .select('project_id, tool_account_id')
+      .eq('id', mappingId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (fetchError) {
+      console.error("Mapping fetch error:", fetchError)
+      return { error: "Mapping not found" }
+    }
 
     if (!mapping) {
       return { error: "Mapping not found" }
     }
 
     // Delete mapping
-    await db.delete(projectTools).where(eq(projectTools.id, mappingId))
+    const { error: deleteError } = await supabase
+      .from('project_tools')
+      .delete()
+      .eq('id', mappingId)
+      .eq('user_id', user.id)
+
+    if (deleteError) {
+      console.error("Mapping deletion error:", deleteError)
+      return { error: "Failed to delete mapping. Please try again." }
+    }
 
     // Log activity
-    await db.insert(activity).values({
-      userId: user.id,
-      type: "project_updated",
-      description: "Deleted project-tool mapping",
-      metadata: JSON.stringify({ projectId: mapping.projectId, toolAccountId: mapping.toolAccountId, mappingId }),
-    })
+    const { error: activityError } = await supabase
+      .from('activity')
+      .insert({
+        user_id: user.id,
+        type: "project_updated",
+        description: "Deleted project-tool mapping",
+        metadata: JSON.stringify({ 
+          project_id: mapping.project_id, 
+          tool_account_id: mapping.tool_account_id, 
+          mapping_id: mappingId 
+        }),
+      })
+
+    if (activityError) {
+      console.error("Activity log error:", activityError)
+      // Don't fail the operation if activity logging fails
+    }
 
     revalidatePath("/map")
     revalidatePath("/dashboard")
@@ -116,13 +160,19 @@ export async function bulkCreateMappings(projectId: string, toolAccountIds: stri
       redirect("/sign-in")
     }
 
-    // Filter out existing mappings
-    const existingMappings = await db
-      .select({ toolAccountId: projectTools.toolAccountId })
-      .from(projectTools)
-      .where(eq(projectTools.projectId, projectId))
+    // Get existing mappings for this project and user
+    const { data: existingMappings, error: fetchError } = await supabase
+      .from('project_tools')
+      .select('tool_account_id')
+      .eq('project_id', projectId)
+      .eq('user_id', user.id)
 
-    const existingToolAccountIds = existingMappings.map((m) => m.toolAccountId)
+    if (fetchError) {
+      console.error("Existing mappings fetch error:", fetchError)
+      return { error: "Failed to check existing mappings. Please try again." }
+    }
+
+    const existingToolAccountIds = existingMappings?.map((m) => m.tool_account_id) || []
     const newToolAccountIds = toolAccountIds.filter((id) => !existingToolAccountIds.includes(id))
 
     if (newToolAccountIds.length === 0) {
@@ -131,22 +181,39 @@ export async function bulkCreateMappings(projectId: string, toolAccountIds: stri
 
     // Create new mappings
     const mappingsData = newToolAccountIds.map((toolAccountId) => ({
-      userId: user.id,
-      projectId,
-      toolAccountId,
-      isActive: true,
-      usageCount: 0,
+      user_id: user.id,
+      project_id: projectId,
+      tool_account_id: toolAccountId,
+      is_active: true,
+      usage_count: 0,
     }))
 
-    await db.insert(projectTools).values(mappingsData)
+    const { error: insertError } = await supabase
+      .from('project_tools')
+      .insert(mappingsData)
+
+    if (insertError) {
+      console.error("Bulk mapping creation error:", insertError)
+      return { error: "Failed to create mappings. Please try again." }
+    }
 
     // Log activity
-    await db.insert(activity).values({
-      userId: user.id,
-      type: "project_updated",
-      description: `Bulk created ${newToolAccountIds.length} project-tool mappings`,
-      metadata: JSON.stringify({ projectId, toolAccountIds: newToolAccountIds }),
-    })
+    const { error: activityError } = await supabase
+      .from('activity')
+      .insert({
+        user_id: user.id,
+        type: "project_updated",
+        description: `Bulk created ${newToolAccountIds.length} project-tool mappings`,
+        metadata: JSON.stringify({ 
+          project_id: projectId, 
+          tool_account_ids: newToolAccountIds 
+        }),
+      })
+
+    if (activityError) {
+      console.error("Activity log error:", activityError)
+      // Don't fail the operation if activity logging fails
+    }
 
     revalidatePath("/map")
     revalidatePath("/dashboard")
@@ -169,14 +236,37 @@ export async function updateMappingUsage(mappingId: string) {
       redirect("/sign-in")
     }
 
+    // First, get the current usage count (ensure user owns the mapping)
+    const { data: currentMapping, error: fetchError } = await supabase
+      .from('project_tools')
+      .select('usage_count')
+      .eq('id', mappingId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (fetchError) {
+      console.error("Mapping fetch error:", fetchError)
+      return { error: "Mapping not found" }
+    }
+
+    if (!currentMapping) {
+      return { error: "Mapping not found" }
+    }
+
     // Update usage count and last used timestamp
-    await db
-      .update(projectTools)
-      .set({
-        usageCount: sql`${projectTools.usageCount} + 1`,
-        lastUsed: new Date(),
+    const { error: updateError } = await supabase
+      .from('project_tools')
+      .update({
+        usage_count: currentMapping.usage_count + 1,
+        last_used: new Date().toISOString(),
       })
-      .where(eq(projectTools.id, mappingId))
+      .eq('id', mappingId)
+      .eq('user_id', user.id)
+
+    if (updateError) {
+      console.error("Mapping usage update error:", updateError)
+      return { error: "Failed to update usage. Please try again." }
+    }
 
     revalidatePath("/map")
     revalidatePath("/dashboard")
