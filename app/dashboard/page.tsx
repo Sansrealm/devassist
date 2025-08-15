@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardHeader from "@/components/dashboard/dashboard-header"
@@ -5,36 +7,6 @@ import MonthlySpendCard from "@/components/dashboard/monthly-spend-card"
 import FiltersBar from "@/components/dashboard/filters-bar"
 import EmailToolTable from "@/components/dashboard/email-tool-table"
 import SavingsOpportunities from "@/components/dashboard/savings-opportunities"
-import { db } from "@/lib/db"
-import { subscriptions, toolAccounts, tools, emails, profiles } from "@/lib/db/schema"
-import { eq, sql, desc } from "drizzle-orm"
-
-async function ensureUserProfile(userId: string, userEmail: string) {
-  try {
-    // Check if profile exists
-    const existingProfile = await db
-      .select()
-      .from(profiles)
-      .where(eq(profiles.userId, userId))
-      .limit(1)
-
-    if (existingProfile.length === 0) {
-      // Create profile if it doesn't exist
-      await db.insert(profiles).values({
-        id: crypto.randomUUID(),
-        userId: userId,
-        firstName: null,
-        lastName: null,
-        avatarUrl: null,
-        timezone: "UTC",
-      })
-      console.log("✅ Created profile for user:", userId)
-    }
-  } catch (error) {
-    console.error("❌ Error ensuring profile:", error)
-    // Don't throw - let the dashboard load even if profile creation fails
-  }
-}
 
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -48,59 +20,123 @@ export default async function DashboardPage() {
 
   console.log("🔍 User authenticated:", user.id)
 
-  // Ensure user has a profile record
-  await ensureUserProfile(user.id, user.email || "")
-
   try {
-    // Fetch dashboard data
-    const [monthlySpendData, emailToolData] = await Promise.all([
-      // Get total monthly spend
-      db
-        .select({
-          totalSpend: sql<number>`COALESCE(SUM(CASE 
-            WHEN ${subscriptions.billingCycle} = 'monthly' THEN ${subscriptions.cost}
-            WHEN ${subscriptions.billingCycle} = 'yearly' THEN ${subscriptions.cost} / 12
-            ELSE 0
-          END), 0)`.as("totalSpend"),
-          activeSubscriptions: sql<number>`COUNT(CASE WHEN ${subscriptions.status} = 'active' THEN 1 END)`.as(
-            "activeSubscriptions",
-          ),
-          trialSubscriptions: sql<number>`COUNT(CASE WHEN ${subscriptions.status} = 'trial' THEN 1 END)`.as(
-            "trialSubscriptions",
-          ),
-        })
-        .from(subscriptions)
-        .where(eq(subscriptions.userId, user.id)),
+    // Ensure user has profile - create if missing
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
 
-      // Get email-tool mapping data
-      db
-        .select({
-          emailAddress: emails.email,
-          toolName: tools.name,
-          toolCategory: tools.category,
-          subscriptionCost: subscriptions.cost,
-          subscriptionStatus: subscriptions.status,
-          billingCycle: subscriptions.billingCycle,
-          renewalDate: subscriptions.renewalDate,
-          toolId: tools.id,
-          subscriptionId: subscriptions.id,
-        })
-        .from(emails)
-        .leftJoin(toolAccounts, eq(emails.id, toolAccounts.emailId))
-        .leftJoin(tools, eq(toolAccounts.toolId, tools.id))
-        .leftJoin(subscriptions, eq(toolAccounts.id, subscriptions.toolAccountId))
-        .where(eq(emails.userId, user.id))
-        .orderBy(desc(subscriptions.createdAt)),
+    if (!existingProfile) {
+      console.log("🔨 Creating missing profile...")
+      await supabase.from('profiles').insert({
+        id: crypto.randomUUID(),
+        user_id: user.id,
+        first_name: null,
+        last_name: null,
+        avatar_url: null,
+        timezone: 'UTC'
+      })
+    }
+
+    // Fetch dashboard data using Supabase client (matches your schema)
+    const [subscriptionsResult, emailToolResult] = await Promise.all([
+      // Get subscription data
+      supabase
+        .from('subscriptions')
+        .select('cost, billing_cycle, status')
+        .eq('user_id', user.id),
+
+      // Get email-tool mapping data with joins
+      supabase
+        .from('emails')
+        .select(`
+          email,
+          tool_accounts(
+            id,
+            tools(
+              id,
+              name,
+              category
+            ),
+            subscriptions(
+              id,
+              cost,
+              status,
+              billing_cycle,
+              renewal_date
+            )
+          )
+        `)
+        .eq('user_id', user.id)
     ])
 
-    console.log("📊 Monthly spend data:", monthlySpendData)
-    console.log("📧 Email tool data length:", emailToolData.length)
+    console.log("📊 Subscriptions result:", subscriptionsResult)
+    console.log("📧 Email tool result:", emailToolResult)
 
-    const monthlySpend = monthlySpendData[0] || {
-      totalSpend: 0,
-      activeSubscriptions: 0,
-      trialSubscriptions: 0,
+    // Process subscription data for summary cards
+    let totalSpend = 0
+    let activeSubscriptions = 0
+    let trialSubscriptions = 0
+
+    if (subscriptionsResult.data && subscriptionsResult.data.length > 0) {
+      subscriptionsResult.data.forEach(sub => {
+        if (sub.status === 'active') {
+          activeSubscriptions++
+          const cost = parseFloat(sub.cost) || 0
+          if (sub.billing_cycle === 'monthly') {
+            totalSpend += cost
+          } else if (sub.billing_cycle === 'yearly') {
+            totalSpend += cost / 12
+          }
+        } else if (sub.status === 'trial') {
+          trialSubscriptions++
+        }
+      })
     }
+
+    // Process email-tool data for table
+    const emailToolData = []
+    
+    if (emailToolResult.data) {
+      for (const email of emailToolResult.data) {
+        if (email.tool_accounts && email.tool_accounts.length > 0) {
+          for (const toolAccount of email.tool_accounts) {
+            if (toolAccount.subscriptions && toolAccount.subscriptions.length > 0) {
+              for (const subscription of toolAccount.subscriptions) {
+                emailToolData.push({
+                  emailAddress: email.email,
+                  toolName: toolAccount.tools?.name || null,
+                  toolCategory: toolAccount.tools?.category || null,
+                  subscriptionCost: subscription.cost?.toString() || null,
+                  subscriptionStatus: subscription.status || null,
+                  billingCycle: subscription.billing_cycle || null,
+                  renewalDate: subscription.renewal_date ? new Date(subscription.renewal_date) : null,
+                  toolId: toolAccount.tools?.id || null,
+                  subscriptionId: subscription.id || null,
+                })
+              }
+            } else {
+              // Tool account without subscription
+              emailToolData.push({
+                emailAddress: email.email,
+                toolName: toolAccount.tools?.name || null,
+                toolCategory: toolAccount.tools?.category || null,
+                subscriptionCost: null,
+                subscriptionStatus: null,
+                billingCycle: null,
+                renewalDate: null,
+                toolId: toolAccount.tools?.id || null,
+                subscriptionId: null,
+              })
+            }
+          }
+        }
+      }
+    }
+
+    console.log("📋 Processed email tool data:", emailToolData)
 
     return (
       <div className="min-h-screen bg-background">
@@ -109,9 +145,9 @@ export default async function DashboardPage() {
         <main className="container mx-auto px-4 py-8 space-y-8">
           {/* Monthly Spend Overview */}
           <MonthlySpendCard
-            totalSpend={monthlySpend.totalSpend}
-            activeSubscriptions={monthlySpend.activeSubscriptions}
-            trialSubscriptions={monthlySpend.trialSubscriptions}
+            totalSpend={totalSpend}
+            activeSubscriptions={activeSubscriptions}
+            trialSubscriptions={trialSubscriptions}
           />
 
           {/* Filters */}
@@ -128,7 +164,6 @@ export default async function DashboardPage() {
   } catch (error) {
     console.error("🚨 Dashboard error:", error)
     
-    // Return a user-friendly error page
     return (
       <div className="min-h-screen bg-background">
         <DashboardHeader user={user} />
@@ -137,16 +172,22 @@ export default async function DashboardPage() {
           <div className="text-center py-12">
             <h1 className="text-2xl font-bold mb-4">Welcome to DevStack Companion!</h1>
             <p className="text-muted-foreground mb-8">
-              It looks like you're just getting started. Let's add your first development tool to begin tracking your subscriptions.
+              Your authentication is working! Ready to start tracking your development tools.
             </p>
             
-            <button className="bg-gradient-to-r from-[#002F71] to-[#0A4BA0] hover:from-[#001f4d] hover:to-[#083d87] text-white px-6 py-3 rounded-lg font-medium">
-              Add Your First Tool
-            </button>
-            
-            {/* Debug info for development */}
+            <div className="bg-blue-50 p-6 rounded-lg">
+              <h3 className="font-medium text-blue-900 mb-2">Getting Started</h3>
+              <p className="text-blue-700 text-sm mb-4">
+                Your database is set up and ready. You can now start adding tools and subscriptions.
+              </p>
+              <button className="bg-gradient-to-r from-[#002F71] to-[#0A4BA0] hover:from-[#001f4d] hover:to-[#083d87] text-white px-6 py-3 rounded-lg font-medium">
+                Add Your First Tool
+              </button>
+            </div>
+
+            {/* Debug info */}
             <details className="mt-8 text-left max-w-2xl mx-auto">
-              <summary className="cursor-pointer text-sm text-muted-foreground">Debug Info (Development Only)</summary>
+              <summary className="cursor-pointer text-sm text-muted-foreground">Debug Info</summary>
               <pre className="mt-4 p-4 bg-muted rounded text-xs overflow-auto">
                 {JSON.stringify(error, null, 2)}
               </pre>
