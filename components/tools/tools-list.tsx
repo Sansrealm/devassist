@@ -78,12 +78,22 @@ export default function ToolsList({ tools }: ToolsListProps) {
           description: result.error,
           variant: "destructive",
         })
+        setIsDeleting(false)
       } else {
         toast({
           title: "Success",
           description: `${toolToDelete.name} has been deleted.`,
         })
-        router.refresh() // Refresh the page to update the tools list
+        
+        // Clean up state first
+        setDeleteDialogOpen(false)
+        setToolToDelete(null)
+        setIsDeleting(false)
+        
+        // Use a more reliable refresh method
+        setTimeout(() => {
+          window.location.href = window.location.pathname
+        }, 500)
       }
     } catch (error) {
       toast({
@@ -91,10 +101,7 @@ export default function ToolsList({ tools }: ToolsListProps) {
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       })
-    } finally {
       setIsDeleting(false)
-      setDeleteDialogOpen(false)
-      setToolToDelete(null)
     }
   }
 

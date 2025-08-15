@@ -89,12 +89,22 @@ export default function ProjectsList({ projects }: ProjectsListProps) {
           description: result.error,
           variant: "destructive",
         })
+        setIsDeleting(false)
       } else {
         toast({
           title: "Success",
           description: `${projectToDelete.name} has been deleted.`,
         })
-        router.refresh() // Refresh the page to update the projects list
+        
+        // Clean up state first
+        setDeleteDialogOpen(false)
+        setProjectToDelete(null)
+        setIsDeleting(false)
+        
+        // Use a more reliable refresh method
+        setTimeout(() => {
+          window.location.href = window.location.pathname
+        }, 500)
       }
     } catch (error) {
       toast({
@@ -102,10 +112,7 @@ export default function ProjectsList({ projects }: ProjectsListProps) {
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       })
-    } finally {
       setIsDeleting(false)
-      setDeleteDialogOpen(false)
-      setProjectToDelete(null)
     }
   }
 
