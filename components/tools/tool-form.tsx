@@ -189,7 +189,53 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                 defaultValue={initialData?.baseCost || ""}
               />
               <p className="text-xs text-muted-foreground">
-                Optional: Base cost for this tool (can be overridden per subscription)
+                Monthly cost for this tool (can be overridden per subscription)
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="renewalDate">Renewal Date</Label>
+                <Input
+                  id="renewalDate"
+                  name="renewalDate"
+                  type="date"
+                  placeholder="YYYY-MM-DD"
+                />
+                <p className="text-xs text-muted-foreground">
+                  When your subscription renews (optional)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="trialEndDate">Trial End Date</Label>
+                <Input
+                  id="trialEndDate"
+                  name="trialEndDate"
+                  type="date"
+                  placeholder="YYYY-MM-DD"
+                />
+                <p className="text-xs text-muted-foreground">
+                  When your free trial expires (optional)
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="billingCycle">Billing Cycle</Label>
+              <Select name="billingCycle" defaultValue="">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select billing cycle" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="one-time">One-time</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                How often you're billed for this tool
               </p>
             </div>
 

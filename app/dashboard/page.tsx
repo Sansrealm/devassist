@@ -41,11 +41,11 @@ export default async function DashboardPage() {
     }
 
     // Fetch dashboard data using Supabase client
-    const [subscriptionsResult, toolsResult, projectToolsResult, projectsResult] = await Promise.all([
+    const [subscriptionsResult, toolsResult, projectToolsResult, projectsResult, emailsResult] = await Promise.all([
       // Get subscription data
       supabase
         .from('subscriptions')
-        .select('cost, billing_cycle, status, renewal_date, tool_account_id')
+        .select('cost, billing_cycle, status, renewal_date, trial_end_date, tool_account_id')
         .eq('user_id', user.id),
 
       // Get tools with tool accounts
@@ -56,6 +56,9 @@ export default async function DashboardPage() {
           name,
           category,
           base_cost,
+          renewal_date,
+          trial_end_date,
+          billing_cycle,
           tool_accounts(
             id,
             email_id
@@ -73,6 +76,12 @@ export default async function DashboardPage() {
       supabase
         .from('projects')
         .select('id, name')
+        .eq('user_id', user.id),
+
+      // Get emails
+      supabase
+        .from('emails')
+        .select('id, email')
         .eq('user_id', user.id)
     ])
 
@@ -80,6 +89,7 @@ export default async function DashboardPage() {
     console.log("🔧 Tools result:", toolsResult)
     console.log("🔗 Project tools result:", projectToolsResult)
     console.log("📁 Projects result:", projectsResult)
+    console.log("📧 Emails result:", emailsResult)
 
     // Process subscription data for summary cards
     let totalSpend = 0
@@ -102,68 +112,82 @@ export default async function DashboardPage() {
       })
     }
 
-    // Process tools overview data
+    // Process tools overview data - one entry per tool-email combination
     const toolsOverviewData = []
     
-    if (toolsResult.data) {
+    if (toolsResult.data && emailsResult.data) {
       for (const tool of toolsResult.data) {
         // Get tool accounts for this tool
         const toolAccounts = tool.tool_accounts || []
         
-        // Get subscriptions for this tool's accounts
-        const toolSubscriptions = (subscriptionsResult.data || []).filter(sub =>
-          toolAccounts.some(ta => ta.id === sub.tool_account_id)
-        )
+        // Create an entry for each tool account (each email association)
+        for (const toolAccount of toolAccounts) {
+          // Find the email for this tool account
+          const email = emailsResult.data.find(e => e.id === toolAccount.email_id)
+          if (!email) continue
 
-        // Calculate cost (subscription cost or base cost)
-        let monthlyCost = 0
-        let renewalDate = null
-        let status = null
+          // Get subscriptions for this specific tool account
+          const toolSubscriptions = (subscriptionsResult.data || []).filter(sub =>
+            sub.tool_account_id === toolAccount.id
+          )
 
-        if (toolSubscriptions.length > 0) {
-          // Use subscription data
-          const activeSub = toolSubscriptions.find(sub => sub.status === 'active') || toolSubscriptions[0]
-          const cost = parseFloat(activeSub.cost) || 0
-          monthlyCost = activeSub.billing_cycle === 'yearly' ? cost / 12 : cost
-          renewalDate = activeSub.renewal_date
-          status = activeSub.status
-        } else {
-          // Use base cost
-          monthlyCost = parseFloat(tool.base_cost) || 0
-          status = monthlyCost > 0 ? 'active' : null
-        }
+          // Calculate cost (subscription cost or base cost)
+          let monthlyCost = 0
+          let renewalDate = null
+          let trialEndDate = null
+          let status = null
+          let billingCycle = null
 
-        // Add to total spend
-        if (monthlyCost > 0 && status === 'active') {
-          totalSpend += monthlyCost
-        }
+          if (toolSubscriptions.length > 0) {
+            // Use subscription data
+            const activeSub = toolSubscriptions.find(sub => sub.status === 'active') || toolSubscriptions[0]
+            const cost = parseFloat(activeSub.cost) || 0
+            monthlyCost = cost // Keep original cost, display logic will handle conversion
+            renewalDate = activeSub.renewal_date
+            trialEndDate = activeSub.trial_end_date
+            status = activeSub.status
+            billingCycle = activeSub.billing_cycle
+          } else {
+            // Use base cost from tool
+            monthlyCost = parseFloat(tool.base_cost) || 0
+            renewalDate = tool.renewal_date
+            trialEndDate = tool.trial_end_date
+            billingCycle = tool.billing_cycle || 'monthly'
+            status = monthlyCost > 0 ? 'active' : null
+          }
 
-        // Get project mappings for this tool
-        const toolAccountIds = toolAccounts.map(ta => ta.id)
-        const projectMappings = (projectToolsResult.data || []).filter(pt =>
-          toolAccountIds.includes(pt.tool_account_id)
-        )
+          // Add to total spend (convert to monthly for total calculation)
+          if (monthlyCost > 0 && status === 'active') {
+            const monthlyEquivalent = billingCycle === 'yearly' ? monthlyCost / 12 : monthlyCost
+            totalSpend += monthlyEquivalent
+          }
 
-        // Get unique project IDs and names
-        const projectIds = [...new Set(projectMappings.map(pm => pm.project_id))]
-        const projects = (projectsResult.data || [])
-          .filter(project => projectIds.includes(project.id))
-          .map(project => ({
-            id: project.id,
-            name: project.name
-          }))
+          // Get project mappings for this specific tool account
+          const projectMappings = (projectToolsResult.data || []).filter(pt =>
+            pt.tool_account_id === toolAccount.id
+          )
 
-        // Only include tools that have accounts (are actually being used)
-        if (toolAccounts.length > 0) {
+          // Get unique project IDs and names
+          const projectIds = [...new Set(projectMappings.map(pm => pm.project_id))]
+          const projects = (projectsResult.data || [])
+            .filter(project => projectIds.includes(project.id))
+            .map(project => ({
+              id: project.id,
+              name: project.name
+            }))
+
           toolsOverviewData.push({
             toolId: tool.id,
             toolName: tool.name,
             toolCategory: tool.category,
+            emailAddress: email.email,
             monthlyCost,
             renewalDate: renewalDate ? new Date(renewalDate) : null,
+            trialEndDate: trialEndDate ? new Date(trialEndDate) : null,
             projectCount: projects.length,
             projects,
-            status
+            status,
+            billingCycle
           })
         }
       }

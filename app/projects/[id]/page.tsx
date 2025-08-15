@@ -41,7 +41,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
       notFound()
     }
 
-    // Fetch project tools with tool details
+    // Fetch project tools with tool details and email information
     const { data: projectTools, error: toolsError } = await supabase
       .from('project_tools')
       .select(`
@@ -49,28 +49,39 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         tool_accounts(
           id,
           account_name,
+          email_id,
           tools(
             id,
             name,
             category,
             base_cost,
             logo_url,
-            website_url
+            website_url,
+            renewal_date,
+            trial_end_date,
+            billing_cycle
           ),
           subscriptions(
             id,
             cost,
             status,
             billing_cycle,
-            renewal_date
+            renewal_date,
+            trial_end_date
           )
         )
       `)
       .eq('project_id', params.id)
       .eq('user_id', user.id)
 
-    if (toolsError) {
-      console.error("Project tools fetch error:", toolsError)
+    // Fetch emails to map email_id to email address
+    const { data: emails, error: emailsError } = await supabase
+      .from('emails')
+      .select('id, email')
+      .eq('user_id', user.id)
+
+    if (toolsError || emailsError) {
+      console.error("Project tools fetch error:", toolsError, emailsError)
     }
 
     // Process tools data
@@ -79,19 +90,29 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
       const tool = toolAccount?.tools
       const subscriptions = toolAccount?.subscriptions || []
 
+      // Find email address
+      const email = emails?.find(e => e.id === toolAccount?.email_id)
+
       // Calculate cost (subscription or base cost)
       let monthlyCost = 0
       let status = null
       let renewalDate = null
+      let trialEndDate = null
+      let billingCycle = null
 
       if (subscriptions.length > 0) {
         const activeSub = subscriptions.find(sub => sub.status === 'active') || subscriptions[0]
         const cost = parseFloat(activeSub.cost) || 0
-        monthlyCost = activeSub.billing_cycle === 'yearly' ? cost / 12 : cost
+        monthlyCost = cost // Keep original cost for display
         status = activeSub.status
         renewalDate = activeSub.renewal_date
+        trialEndDate = activeSub.trial_end_date
+        billingCycle = activeSub.billing_cycle
       } else {
         monthlyCost = parseFloat(tool?.base_cost) || 0
+        renewalDate = tool?.renewal_date
+        trialEndDate = tool?.trial_end_date
+        billingCycle = tool?.billing_cycle || 'monthly'
         status = monthlyCost > 0 ? 'active' : null
       }
 
@@ -100,18 +121,25 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         toolId: tool?.id,
         toolName: tool?.name,
         accountName: toolAccount?.account_name,
+        emailAddress: email?.email || 'Unknown',
         category: tool?.category,
         logoUrl: tool?.logo_url,
         websiteUrl: tool?.website_url,
         monthlyCost,
         status,
-        renewalDate: renewalDate ? new Date(renewalDate) : null
+        renewalDate: renewalDate ? new Date(renewalDate) : null,
+        trialEndDate: trialEndDate ? new Date(trialEndDate) : null,
+        billingCycle
       }
     })
 
     // Calculate total monthly cost
     const totalMonthlyCost = toolsData.reduce((sum, tool) => {
-      return sum + (tool.status === 'active' ? tool.monthlyCost : 0)
+      if (tool.status === 'active') {
+        const monthlyEquivalent = tool.billingCycle === 'yearly' ? tool.monthlyCost / 12 : tool.monthlyCost
+        return sum + monthlyEquivalent
+      }
+      return sum
     }, 0)
 
     const getStatusColor = (status: string | null) => {
@@ -321,6 +349,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                     <TableHeader>
                       <TableRow>
                         <TableHead>Tool</TableHead>
+                        <TableHead>Email</TableHead>
                         <TableHead>Category</TableHead>
                         <TableHead>Cost</TableHead>
                         <TableHead>Status</TableHead>
@@ -341,6 +370,9 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                             </div>
                           </TableCell>
                           <TableCell>
+                            <span className="text-sm text-muted-foreground">{tool.emailAddress}</span>
+                          </TableCell>
+                          <TableCell>
                             {tool.category && (
                               <Badge variant="outline" className={getCategoryColor(tool.category)}>
                                 {tool.category}
@@ -348,8 +380,21 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                             )}
                           </TableCell>
                           <TableCell>
-                            <span className="font-medium">{formatCurrency(tool.monthlyCost)}</span>
-                            <span className="text-muted-foreground">/month</span>
+                            <div className="space-y-1">
+                              <div>
+                                <span className="font-medium">{formatCurrency(tool.monthlyCost)}</span>
+                                <span className="text-muted-foreground">
+                                  {tool.billingCycle === 'yearly' ? '/year' : 
+                                   tool.billingCycle === 'monthly' ? '/month' : 
+                                   tool.billingCycle ? `/${tool.billingCycle}` : '/month'}
+                                </span>
+                              </div>
+                              {tool.billingCycle === 'yearly' && (
+                                <div className="text-xs text-muted-foreground">
+                                  (${(tool.monthlyCost / 12).toFixed(2)}/month)
+                                </div>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             {tool.status && (
@@ -358,7 +403,19 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                               </Badge>
                             )}
                           </TableCell>
-                          <TableCell>{formatDate(tool.renewalDate)}</TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              {tool.renewalDate && (
+                                <div className="text-sm">{formatDate(tool.renewalDate)}</div>
+                              )}
+                              {tool.trialEndDate && (
+                                <div className="text-xs text-orange-600">
+                                  Trial ends: {formatDate(tool.trialEndDate)}
+                                </div>
+                              )}
+                              {!tool.renewalDate && !tool.trialEndDate && <span>-</span>}
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <Button variant="ghost" size="sm" asChild>
                               <Link href={`/tools/${tool.toolId}`}>

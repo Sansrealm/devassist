@@ -25,7 +25,7 @@ export default async function EditToolPage({ params }: EditToolPageProps) {
     // Fetch the tool data
     const { data: tool, error: toolError } = await supabase
       .from('tools')
-      .select('*')
+      .select('*, renewal_date, trial_end_date, billing_cycle')
       .eq('id', params.id)
       .eq('user_id', user.id) // Security: ensure user owns the tool
       .single()
@@ -62,6 +62,9 @@ export default async function EditToolPage({ params }: EditToolPageProps) {
       logoUrl: tool.logo_url,
       websiteUrl: tool.website_url,
       baseCost: tool.base_cost,
+      renewalDate: tool.renewal_date,
+      trialEndDate: tool.trial_end_date,
+      billingCycle: tool.billing_cycle,
     }
 
     return (

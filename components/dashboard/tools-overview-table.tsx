@@ -10,14 +10,17 @@ interface ToolOverview {
   toolId: string
   toolName: string
   toolCategory: string | null
+  emailAddress: string
   monthlyCost: number
   renewalDate: Date | null
+  trialEndDate: Date | null
   projectCount: number
   projects: Array<{
     id: string
     name: string
   }>
   status: string | null
+  billingCycle: string | null
 }
 
 interface ToolsOverviewTableProps {
