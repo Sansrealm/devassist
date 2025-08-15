@@ -67,13 +67,12 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Button
-              size="sm"
-              className="bg-gradient-to-r from-[#002F71] to-[#0A4BA0] hover:from-[#001f4d] hover:to-[#083d87]"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Tool
-            </Button>
+            <Button size="sm" asChild className="...">
+  <Link href="/tools/new">
+    <Plus className="h-4 w-4 mr-2" />
+    Add Tool
+  </Link>
+</Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { MoreHorizontal, ExternalLink } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import Link from "next/link"
 
 interface EmailToolData {
   emailAddress: string | null
@@ -82,9 +83,11 @@ export default function EmailToolTable({ data }: EmailToolTableProps) {
         {data.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground">No tools found. Start by adding your first tool.</p>
-            <Button className="mt-4 bg-gradient-to-r from-[#002F71] to-[#0A4BA0] hover:from-[#001f4d] hover:to-[#083d87]">
-              Add Tool
-            </Button>
+            <Button asChild className="mt-4 bg-gradient-to-r from-[#002F71] to-[#0A4BA0] hover:from-[#001f4d] hover:to-[#083d87]">
+  <Link href="/tools/new">
+    Add Tool
+  </Link>
+</Button>
           </div>
         ) : (
           <div className="rounded-md border">
