@@ -1,10 +1,9 @@
+export const dynamic = 'force-dynamic'
+
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardHeader from "@/components/dashboard/dashboard-header"
 import ToolForm from "@/components/tools/tool-form"
-import { db } from "@/lib/db"
-import { emails } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
 
 export default async function NewToolPage() {
   const supabase = createClient()
@@ -16,30 +15,79 @@ export default async function NewToolPage() {
     redirect("/sign-in")
   }
 
-  // Fetch user's emails for the form
-  const userEmails = await db
-    .select({
-      id: emails.id,
-      email: emails.email,
-      isPrimary: emails.isPrimary,
-    })
-    .from(emails)
-    .where(eq(emails.userId, user.id))
+  try {
+    // Fetch user's emails for the form using Supabase client
+    const { data: userEmailsData, error } = await supabase
+      .from('emails')
+      .select('id, email, is_primary')
+      .eq('user_id', user.id)
+      .order('is_primary', { ascending: false }) // Primary email first
 
-  return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader user={user} />
+    if (error) {
+      console.error("Error fetching user emails:", error)
+    }
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight">Add New Tool</h1>
-            <p className="text-muted-foreground">Add a development tool to track its usage and costs</p>
+    // Transform to match expected format (camelCase)
+    const userEmails = (userEmailsData || []).map(email => ({
+      id: email.id,
+      email: email.email,
+      isPrimary: email.is_primary
+    }))
+
+    console.log("📧 User emails for form:", userEmails)
+
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader user={user} />
+
+        <main className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold tracking-tight">Add New Tool</h1>
+              <p className="text-muted-foreground">Add a development tool to track its usage and costs</p>
+            </div>
+
+            <ToolForm userEmails={userEmails} />
           </div>
+        </main>
+      </div>
+    )
+  } catch (error) {
+    console.error("🚨 New tool page error:", error)
+    
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader user={user} />
+        
+        <main className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold tracking-tight">Add New Tool</h1>
+              <p className="text-muted-foreground">Add a development tool to track its usage and costs</p>
+            </div>
 
-          <ToolForm userEmails={userEmails} />
-        </div>
-      </main>
-    </div>
-  )
+            <div className="text-center py-12 bg-muted/20 rounded-lg">
+              <h3 className="text-lg font-semibold mb-2">Unable to Load Form</h3>
+              <p className="text-muted-foreground mb-4">
+                There was an issue loading your email addresses for the form.
+              </p>
+              
+              {/* Fallback: Show form with empty emails array */}
+              <div className="mt-6">
+                <ToolForm userEmails={[]} />
+              </div>
+            </div>
+
+            {/* Debug info */}
+            <details className="mt-8 text-left">
+              <summary className="cursor-pointer text-sm text-muted-foreground">Debug Info</summary>
+              <pre className="mt-4 p-4 bg-muted rounded text-xs overflow-auto">
+                {JSON.stringify(error, null, 2)}
+              </pre>
+            </details>
+          </div>
+        </main>
+      </div>
+    )
+  }
 }
