@@ -41,105 +41,115 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
       notFound()
     }
 
-    // Fetch project tools with tool details and email information
+    console.log("📁 Project data:", project)
+
+    // Fetch project tools with tool details - improved query structure
     const { data: projectTools, error: toolsError } = await supabase
       .from('project_tools')
       .select(`
+        id,
         tool_account_id,
-        tool_accounts(
+        is_active,
+        tool_accounts!inner(
           id,
           account_name,
           email_id,
-          tools(
+          tools!inner(
             id,
             name,
             category,
             base_cost,
             logo_url,
-            website_url,
-            renewal_date,
-            trial_end_date,
-            billing_cycle
-          ),
-          subscriptions(
-            id,
-            cost,
-            status,
-            billing_cycle,
-            renewal_date,
-            trial_end_date
+            website_url
           )
         )
       `)
       .eq('project_id', params.id)
       .eq('user_id', user.id)
 
-    // Fetch emails to map email_id to email address
-    const { data: emails, error: emailsError } = await supabase
-      .from('emails')
-      .select('id, email')
-      .eq('user_id', user.id)
+    console.log("🔗 Project tools query result:", { data: projectTools, error: toolsError })
 
-    if (toolsError || emailsError) {
-      console.error("Project tools fetch error:", toolsError, emailsError)
+    if (toolsError) {
+      console.error("Project tools fetch error:", toolsError)
     }
 
-    // Process tools data
-    const toolsData = (projectTools || []).map(pt => {
-      const toolAccount = pt.tool_accounts
-      const tool = toolAccount?.tools
-      const subscriptions = toolAccount?.subscriptions || []
+    // Fetch subscriptions separately for better data integrity
+    const toolAccountIds = (projectTools || [])
+      .map(pt => pt.tool_accounts?.id)
+      .filter(Boolean)
 
-      // Find email address
-      const email = emails?.find(e => e.id === toolAccount?.email_id)
+    console.log("🔑 Tool account IDs:", toolAccountIds)
 
-      // Calculate cost (subscription or base cost)
-      let monthlyCost = 0
-      let status = null
-      let renewalDate = null
-      let trialEndDate = null
-      let billingCycle = null
+    const { data: subscriptions, error: subscriptionsError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .in('tool_account_id', toolAccountIds)
+      .eq('user_id', user.id)
 
-      if (subscriptions.length > 0) {
-        const activeSub = subscriptions.find(sub => sub.status === 'active') || subscriptions[0]
-        const cost = parseFloat(activeSub.cost) || 0
-        monthlyCost = cost // Keep original cost for display
-        status = activeSub.status
-        renewalDate = activeSub.renewal_date
-        trialEndDate = activeSub.trial_end_date
-        billingCycle = activeSub.billing_cycle
-      } else {
-        monthlyCost = parseFloat(tool?.base_cost) || 0
-        renewalDate = tool?.renewal_date
-        trialEndDate = tool?.trial_end_date
-        billingCycle = tool?.billing_cycle || 'monthly'
-        status = monthlyCost > 0 ? 'active' : null
-      }
+    console.log("💰 Subscriptions data:", { data: subscriptions, error: subscriptionsError })
 
-      return {
-        toolAccountId: toolAccount?.id,
-        toolId: tool?.id,
-        toolName: tool?.name,
-        accountName: toolAccount?.account_name,
-        emailAddress: email?.email || 'Unknown',
-        category: tool?.category,
-        logoUrl: tool?.logo_url,
-        websiteUrl: tool?.website_url,
-        monthlyCost,
-        status,
-        renewalDate: renewalDate ? new Date(renewalDate) : null,
-        trialEndDate: trialEndDate ? new Date(trialEndDate) : null,
-        billingCycle
-      }
-    })
+    if (subscriptionsError) {
+      console.error("Subscriptions fetch error:", subscriptionsError)
+    }
+
+    // Process tools data with better error handling
+    const toolsData = (projectTools || [])
+      .filter(pt => {
+        // Filter out incomplete records
+        const hasValidToolAccount = pt.tool_accounts && pt.tool_accounts.tools
+        if (!hasValidToolAccount) {
+          console.warn("Filtering out incomplete project tool:", pt)
+          return false
+        }
+        return true
+      })
+      .map(pt => {
+        const toolAccount = pt.tool_accounts!
+        const tool = toolAccount.tools!
+        
+        // Find subscriptions for this tool account
+        const toolSubscriptions = (subscriptions || []).filter(
+          sub => sub.tool_account_id === toolAccount.id
+        )
+
+        // Calculate cost (subscription or base cost)
+        let monthlyCost = 0
+        let status = null
+        let renewalDate = null
+
+        if (toolSubscriptions.length > 0) {
+          const activeSub = toolSubscriptions.find(sub => sub.status === 'active') || toolSubscriptions[0]
+          const cost = parseFloat(activeSub.cost) || 0
+          monthlyCost = activeSub.billing_cycle === 'yearly' ? cost / 12 : cost
+          status = activeSub.status
+          renewalDate = activeSub.renewal_date
+        } else {
+          monthlyCost = parseFloat(tool.base_cost) || 0
+          status = monthlyCost > 0 ? 'active' : null
+        }
+
+        return {
+          projectToolId: pt.id,
+          toolAccountId: toolAccount.id,
+          toolId: tool.id,
+          toolName: tool.name,
+          accountName: toolAccount.account_name,
+          category: tool.category,
+          logoUrl: tool.logo_url,
+          websiteUrl: tool.website_url,
+          monthlyCost,
+          status,
+          renewalDate: renewalDate ? new Date(renewalDate) : null,
+          isActive: pt.is_active
+        }
+      })
+
+    console.log("📊 Processed tools data:", toolsData)
+    console.log("🔢 Tool count:", toolsData.length)
 
     // Calculate total monthly cost
     const totalMonthlyCost = toolsData.reduce((sum, tool) => {
-      if (tool.status === 'active') {
-        const monthlyEquivalent = tool.billingCycle === 'yearly' ? tool.monthlyCost / 12 : tool.monthlyCost
-        return sum + monthlyEquivalent
-      }
-      return sum
+      return sum + (tool.status === 'active' ? tool.monthlyCost : 0)
     }, 0)
 
     const getStatusColor = (status: string | null) => {
@@ -329,8 +339,20 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           {/* Tools Table */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Project Tools</CardTitle>
-              <CardDescription>Tools associated with this project</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Project Tools</CardTitle>
+                  <CardDescription>
+                    {toolsData.length} tool{toolsData.length !== 1 ? 's' : ''} associated with this project
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/map?project=${project.id}`}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Manage Tools
+                  </Link>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {toolsData.length === 0 ? (
@@ -349,7 +371,6 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                     <TableHeader>
                       <TableRow>
                         <TableHead>Tool</TableHead>
-                        <TableHead>Email</TableHead>
                         <TableHead>Category</TableHead>
                         <TableHead>Cost</TableHead>
                         <TableHead>Status</TableHead>
@@ -359,18 +380,20 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                     </TableHeader>
                     <TableBody>
                       {toolsData.map((tool) => (
-                        <TableRow key={tool.toolAccountId}>
+                        <TableRow key={`${tool.projectToolId}-${tool.toolAccountId}`}>
                           <TableCell>
                             <div className="flex items-center space-x-3">
                               <Avatar className="h-8 w-8">
-                                <AvatarImage src={tool.logoUrl || "/placeholder.svg"} alt={tool.toolName} />
-                                <AvatarFallback>{tool.toolName?.charAt(0).toUpperCase()}</AvatarFallback>
+                                <AvatarImage src={tool.logoUrl || "/placeholder.svg"} alt={tool.toolName || "Tool"} />
+                                <AvatarFallback>{tool.toolName?.charAt(0).toUpperCase() || "T"}</AvatarFallback>
                               </Avatar>
-                              <span className="font-medium">{tool.toolName}</span>
+                              <div>
+                                <span className="font-medium">{tool.toolName}</span>
+                                {tool.accountName && (
+                                  <div className="text-sm text-muted-foreground">{tool.accountName}</div>
+                                )}
+                              </div>
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-muted-foreground">{tool.emailAddress}</span>
                           </TableCell>
                           <TableCell>
                             {tool.category && (
@@ -380,21 +403,8 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                             )}
                           </TableCell>
                           <TableCell>
-                            <div className="space-y-1">
-                              <div>
-                                <span className="font-medium">{formatCurrency(tool.monthlyCost)}</span>
-                                <span className="text-muted-foreground">
-                                  {tool.billingCycle === 'yearly' ? '/year' : 
-                                   tool.billingCycle === 'monthly' ? '/month' : 
-                                   tool.billingCycle ? `/${tool.billingCycle}` : '/month'}
-                                </span>
-                              </div>
-                              {tool.billingCycle === 'yearly' && (
-                                <div className="text-xs text-muted-foreground">
-                                  (${(tool.monthlyCost / 12).toFixed(2)}/month)
-                                </div>
-                              )}
-                            </div>
+                            <span className="font-medium">{formatCurrency(tool.monthlyCost)}</span>
+                            <span className="text-muted-foreground">/month</span>
                           </TableCell>
                           <TableCell>
                             {tool.status && (
@@ -403,25 +413,15 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                               </Badge>
                             )}
                           </TableCell>
+                          <TableCell>{formatDate(tool.renewalDate)}</TableCell>
                           <TableCell>
-                            <div className="space-y-1">
-                              {tool.renewalDate && (
-                                <div className="text-sm">{formatDate(tool.renewalDate)}</div>
-                              )}
-                              {tool.trialEndDate && (
-                                <div className="text-xs text-orange-600">
-                                  Trial ends: {formatDate(tool.trialEndDate)}
-                                </div>
-                              )}
-                              {!tool.renewalDate && !tool.trialEndDate && <span>-</span>}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/tools/${tool.toolId}`}>
-                                <ExternalLink className="h-4 w-4" />
-                              </Link>
-                            </Button>
+                            {tool.toolId && (
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/tools/${tool.toolId}`}>
+                                  <ExternalLink className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
