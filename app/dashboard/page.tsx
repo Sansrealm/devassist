@@ -2,11 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import DashboardHeader from "@/components/dashboard/dashboard-header"
-import MonthlySpendCard from "@/components/dashboard/monthly-spend-card"
-import FiltersBar from "@/components/dashboard/filters-bar"
-import ToolsOverviewTable from "@/components/dashboard/tools-overview-table"
-import SavingsOpportunities from "@/components/dashboard/savings-opportunities"
+import DashboardClient from "./dashboard-client"
 
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -41,11 +37,11 @@ export default async function DashboardPage() {
     }
 
     // Fetch dashboard data using Supabase client
-    const [subscriptionsResult, toolsResult, projectToolsResult, projectsResult, emailsResult] = await Promise.all([
+    const [subscriptionsResult, toolsResult, projectToolsResult, projectsResult] = await Promise.all([
       // Get subscription data
       supabase
         .from('subscriptions')
-        .select('cost, billing_cycle, status, renewal_date, trial_end_date, tool_account_id')
+        .select('cost, billing_cycle, status, renewal_date, tool_account_id')
         .eq('user_id', user.id),
 
       // Get tools with tool accounts
@@ -56,9 +52,6 @@ export default async function DashboardPage() {
           name,
           category,
           base_cost,
-          renewal_date,
-          trial_end_date,
-          billing_cycle,
           tool_accounts(
             id,
             email_id
@@ -76,12 +69,6 @@ export default async function DashboardPage() {
       supabase
         .from('projects')
         .select('id, name')
-        .eq('user_id', user.id),
-
-      // Get emails
-      supabase
-        .from('emails')
-        .select('id, email')
         .eq('user_id', user.id)
     ])
 
@@ -89,7 +76,6 @@ export default async function DashboardPage() {
     console.log("🔧 Tools result:", toolsResult)
     console.log("🔗 Project tools result:", projectToolsResult)
     console.log("📁 Projects result:", projectsResult)
-    console.log("📧 Emails result:", emailsResult)
 
     // Process subscription data for summary cards
     let totalSpend = 0
@@ -112,82 +98,68 @@ export default async function DashboardPage() {
       })
     }
 
-    // Process tools overview data - one entry per tool-email combination
+    // Process tools overview data
     const toolsOverviewData = []
     
-    if (toolsResult.data && emailsResult.data) {
+    if (toolsResult.data) {
       for (const tool of toolsResult.data) {
         // Get tool accounts for this tool
         const toolAccounts = tool.tool_accounts || []
         
-        // Create an entry for each tool account (each email association)
-        for (const toolAccount of toolAccounts) {
-          // Find the email for this tool account
-          const email = emailsResult.data.find(e => e.id === toolAccount.email_id)
-          if (!email) continue
+        // Get subscriptions for this tool's accounts
+        const toolSubscriptions = (subscriptionsResult.data || []).filter(sub =>
+          toolAccounts.some(ta => ta.id === sub.tool_account_id)
+        )
 
-          // Get subscriptions for this specific tool account
-          const toolSubscriptions = (subscriptionsResult.data || []).filter(sub =>
-            sub.tool_account_id === toolAccount.id
-          )
+        // Calculate cost (subscription cost or base cost)
+        let monthlyCost = 0
+        let renewalDate = null
+        let status = null
 
-          // Calculate cost (subscription cost or base cost)
-          let monthlyCost = 0
-          let renewalDate = null
-          let trialEndDate = null
-          let status = null
-          let billingCycle = null
+        if (toolSubscriptions.length > 0) {
+          // Use subscription data
+          const activeSub = toolSubscriptions.find(sub => sub.status === 'active') || toolSubscriptions[0]
+          const cost = parseFloat(activeSub.cost) || 0
+          monthlyCost = activeSub.billing_cycle === 'yearly' ? cost / 12 : cost
+          renewalDate = activeSub.renewal_date
+          status = activeSub.status
+        } else {
+          // Use base cost
+          monthlyCost = parseFloat(tool.base_cost) || 0
+          status = monthlyCost > 0 ? 'active' : null
+        }
 
-          if (toolSubscriptions.length > 0) {
-            // Use subscription data
-            const activeSub = toolSubscriptions.find(sub => sub.status === 'active') || toolSubscriptions[0]
-            const cost = parseFloat(activeSub.cost) || 0
-            monthlyCost = cost // Keep original cost, display logic will handle conversion
-            renewalDate = activeSub.renewal_date
-            trialEndDate = activeSub.trial_end_date
-            status = activeSub.status
-            billingCycle = activeSub.billing_cycle
-          } else {
-            // Use base cost from tool
-            monthlyCost = parseFloat(tool.base_cost) || 0
-            renewalDate = tool.renewal_date
-            trialEndDate = tool.trial_end_date
-            billingCycle = tool.billing_cycle || 'monthly'
-            status = monthlyCost > 0 ? 'active' : null
-          }
+        // Add to total spend
+        if (monthlyCost > 0 && status === 'active') {
+          totalSpend += monthlyCost
+        }
 
-          // Add to total spend (convert to monthly for total calculation)
-          if (monthlyCost > 0 && status === 'active') {
-            const monthlyEquivalent = billingCycle === 'yearly' ? monthlyCost / 12 : monthlyCost
-            totalSpend += monthlyEquivalent
-          }
+        // Get project mappings for this tool
+        const toolAccountIds = toolAccounts.map(ta => ta.id)
+        const projectMappings = (projectToolsResult.data || []).filter(pt =>
+          toolAccountIds.includes(pt.tool_account_id)
+        )
 
-          // Get project mappings for this specific tool account
-          const projectMappings = (projectToolsResult.data || []).filter(pt =>
-            pt.tool_account_id === toolAccount.id
-          )
+        // Get unique project IDs and names
+        const projectIds = [...new Set(projectMappings.map(pm => pm.project_id))]
+        const projects = (projectsResult.data || [])
+          .filter(project => projectIds.includes(project.id))
+          .map(project => ({
+            id: project.id,
+            name: project.name
+          }))
 
-          // Get unique project IDs and names
-          const projectIds = [...new Set(projectMappings.map(pm => pm.project_id))]
-          const projects = (projectsResult.data || [])
-            .filter(project => projectIds.includes(project.id))
-            .map(project => ({
-              id: project.id,
-              name: project.name
-            }))
-
+        // Only include tools that have accounts (are actually being used)
+        if (toolAccounts.length > 0) {
           toolsOverviewData.push({
             toolId: tool.id,
             toolName: tool.name,
             toolCategory: tool.category,
-            emailAddress: email.email,
             monthlyCost,
             renewalDate: renewalDate ? new Date(renewalDate) : null,
-            trialEndDate: trialEndDate ? new Date(trialEndDate) : null,
             projectCount: projects.length,
             projects,
-            status,
-            billingCycle
+            status
           })
         }
       }
@@ -196,36 +168,21 @@ export default async function DashboardPage() {
     console.log("📋 Processed tools overview data:", toolsOverviewData)
 
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader user={user} />
-
-        <main className="container mx-auto px-4 py-8 space-y-8">
-          {/* Monthly Spend Overview */}
-          <MonthlySpendCard
-            totalSpend={totalSpend}
-            activeSubscriptions={activeSubscriptions}
-            trialSubscriptions={trialSubscriptions}
-          />
-
-          {/* Filters */}
-          <FiltersBar />
-
-          {/* Tools Overview */}
-          <ToolsOverviewTable data={toolsOverviewData} />
-
-          {/* Savings Opportunities */}
-          <SavingsOpportunities />
-        </main>
-      </div>
+      <DashboardClient 
+        user={user}
+        toolsOverviewData={toolsOverviewData}
+        totalSpend={totalSpend}
+        activeSubscriptions={activeSubscriptions}
+        trialSubscriptions={trialSubscriptions}
+        allProjects={projectsResult.data || []}
+      />
     )
   } catch (error) {
     console.error("🚨 Dashboard error:", error)
     
     return (
       <div className="min-h-screen bg-background">
-        <DashboardHeader user={user} />
-        
-        <main className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
             <h1 className="text-2xl font-bold mb-4">Welcome to DevStack Companion!</h1>
             <p className="text-muted-foreground mb-8">
@@ -250,7 +207,7 @@ export default async function DashboardPage() {
               </pre>
             </details>
           </div>
-        </main>
+        </div>
       </div>
     )
   }

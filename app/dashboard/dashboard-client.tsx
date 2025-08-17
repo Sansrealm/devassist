@@ -1,0 +1,147 @@
+"use client"
+
+import { useState, useMemo } from "react"
+import DashboardHeader from "@/components/dashboard/dashboard-header"
+import MonthlySpendCard from "@/components/dashboard/monthly-spend-card"
+import FiltersBar, { FilterState } from "@/components/dashboard/filters-bar"
+import ToolsOverviewTable from "@/components/dashboard/tools-overview-table"
+import SavingsOpportunities from "@/components/dashboard/savings-opportunities"
+
+interface ToolOverview {
+  toolId: string
+  toolName: string
+  toolCategory: string | null
+  monthlyCost: number
+  renewalDate: Date | null
+  projectCount: number
+  projects: Array<{
+    id: string
+    name: string
+  }>
+  status: string | null
+}
+
+interface Project {
+  id: string
+  name: string
+}
+
+interface User {
+  id: string
+  email?: string
+}
+
+interface DashboardClientProps {
+  user: User
+  toolsOverviewData: ToolOverview[]
+  totalSpend: number
+  activeSubscriptions: number
+  trialSubscriptions: number
+  allProjects: Project[]
+}
+
+export default function DashboardClient({
+  user,
+  toolsOverviewData,
+  totalSpend,
+  activeSubscriptions,
+  trialSubscriptions,
+  allProjects
+}: DashboardClientProps) {
+  const [filters, setFilters] = useState<FilterState>({
+    search: "",
+    project: "all",
+    status: "all",
+    category: "all"
+  })
+
+  // Extract unique categories from the tools data
+  const uniqueCategories = useMemo(() => {
+    const categories = toolsOverviewData
+      .map(tool => tool.toolCategory)
+      .filter((category): category is string => category !== null)
+    return [...new Set(categories)].sort()
+  }, [toolsOverviewData])
+
+  // Filter the tools data based on current filters
+  const filteredToolsData = useMemo(() => {
+    return toolsOverviewData.filter(tool => {
+      // Search filter (tool name)
+      if (filters.search && !tool.toolName.toLowerCase().includes(filters.search.toLowerCase())) {
+        return false
+      }
+
+      // Status filter
+      if (filters.status !== "all" && tool.status !== filters.status) {
+        return false
+      }
+
+      // Category filter
+      if (filters.category !== "all" && tool.toolCategory !== filters.category) {
+        return false
+      }
+
+      // Project filter
+      if (filters.project !== "all") {
+        if (filters.project === "unassigned") {
+          // Show tools with no projects
+          if (tool.projects.length > 0) {
+            return false
+          }
+        } else {
+          // Show tools assigned to specific project
+          if (!tool.projects.some(project => project.id === filters.project)) {
+            return false
+          }
+        }
+      }
+
+      return true
+    })
+  }, [toolsOverviewData, filters])
+
+  // Calculate filtered totals for display
+  const filteredTotals = useMemo(() => {
+    const filteredSpend = filteredToolsData
+      .filter(tool => tool.status === 'active')
+      .reduce((sum, tool) => sum + tool.monthlyCost, 0)
+    
+    const filteredActive = filteredToolsData.filter(tool => tool.status === 'active').length
+    const filteredTrial = filteredToolsData.filter(tool => tool.status === 'trial').length
+
+    return {
+      totalSpend: filteredSpend,
+      activeSubscriptions: filteredActive,
+      trialSubscriptions: filteredTrial
+    }
+  }, [filteredToolsData])
+
+  return (
+    <div className="min-h-screen bg-background">
+      <DashboardHeader user={user} />
+
+      <main className="container mx-auto px-4 py-8 space-y-8">
+        {/* Monthly Spend Overview - show filtered or total based on whether filters are active */}
+        <MonthlySpendCard
+          totalSpend={filters.search || filters.project !== "all" || filters.status !== "all" || filters.category !== "all" ? filteredTotals.totalSpend : totalSpend}
+          activeSubscriptions={filters.search || filters.project !== "all" || filters.status !== "all" || filters.category !== "all" ? filteredTotals.activeSubscriptions : activeSubscriptions}
+          trialSubscriptions={filters.search || filters.project !== "all" || filters.status !== "all" || filters.category !== "all" ? filteredTotals.trialSubscriptions : trialSubscriptions}
+        />
+
+        {/* Filters */}
+        <FiltersBar 
+          filters={filters}
+          onFiltersChange={setFilters}
+          projects={allProjects}
+          categories={uniqueCategories}
+        />
+
+        {/* Tools Overview - always show filtered data */}
+        <ToolsOverviewTable data={filteredToolsData} />
+
+        {/* Savings Opportunities */}
+        <SavingsOpportunities />
+      </main>
+    </div>
+  )
+}
