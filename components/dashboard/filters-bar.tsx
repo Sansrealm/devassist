@@ -1,6 +1,6 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -9,7 +9,6 @@ import { Search, Filter, X } from "lucide-react"
 export interface FilterState {
   search: string
   project: string
-  status: string
   category: string
 }
 
@@ -37,7 +36,6 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
     onFiltersChange({
       search: "",
       project: "all",
-      status: "all",
       category: "all"
     })
   }
@@ -45,17 +43,13 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
   const hasActiveFilters = 
     filters.search !== "" || 
     filters.project !== "all" || 
-    filters.status !== "all" || 
     filters.category !== "all"
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">Filters</CardTitle>
-            <CardDescription>Filter your tools and subscriptions</CardDescription>
-          </div>
+          <CardTitle className="text-lg">Filters</CardTitle>
           {hasActiveFilters && (
             <Button 
               variant="ghost" 
@@ -109,19 +103,6 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
                   {category.charAt(0).toUpperCase() + category.slice(1)}
                 </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={filters.status} onValueChange={(value) => updateFilter("status", value)}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="trial">Trial</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="expired">Expired</SelectItem>
             </SelectContent>
           </Select>
 

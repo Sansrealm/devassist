@@ -51,7 +51,6 @@ export default function DashboardClient({
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     project: "all",
-    status: "all",
     category: "all"
   })
 
@@ -65,56 +64,51 @@ export default function DashboardClient({
 
   // Filter the tools data based on current filters
   const filteredToolsData = useMemo(() => {
-    return toolsOverviewData.filter(tool => {
-      // Search filter (tool name)
-      if (filters.search && !tool.toolName.toLowerCase().includes(filters.search.toLowerCase())) {
-        return false
-      }
+  return toolsOverviewData.filter(tool => {
+    // Search filter (tool name)
+    if (filters.search && !tool.toolName.toLowerCase().includes(filters.search.toLowerCase())) {
+      return false
+    }
 
-      // Status filter
-      if (filters.status !== "all" && tool.status !== filters.status) {
-        return false
-      }
+    // Category filter
+    if (filters.category !== "all" && tool.toolCategory !== filters.category) {
+      return false
+    }
 
-      // Category filter
-      if (filters.category !== "all" && tool.toolCategory !== filters.category) {
-        return false
-      }
-
-      // Project filter
-      if (filters.project !== "all") {
-        if (filters.project === "unassigned") {
-          // Show tools with no projects
-          if (tool.projects.length > 0) {
-            return false
-          }
-        } else {
-          // Show tools assigned to specific project
-          if (!tool.projects.some(project => project.id === filters.project)) {
-            return false
-          }
+    // Project filter
+    if (filters.project !== "all") {
+      if (filters.project === "unassigned") {
+        // Show tools with no projects
+        if (tool.projects.length > 0) {
+          return false
+        }
+      } else {
+        // Show tools assigned to specific project
+        if (!tool.projects.some(project => project.id === filters.project)) {
+          return false
         }
       }
+    }
 
-      return true
-    })
-  }, [toolsOverviewData, filters])
+    return true
+  })
+}, [toolsOverviewData, filters])
 
   // Calculate filtered totals for display
   const filteredTotals = useMemo(() => {
-    const filteredSpend = filteredToolsData
-      .filter(tool => tool.status === 'active')
-      .reduce((sum, tool) => sum + tool.monthlyCost, 0)
-    
-    const filteredActive = filteredToolsData.filter(tool => tool.status === 'active').length
-    const filteredTrial = filteredToolsData.filter(tool => tool.status === 'trial').length
+  const filteredSpend = filteredToolsData
+    .filter(tool => tool.status === 'active')
+    .reduce((sum, tool) => sum + tool.monthlyCost, 0)
+  
+  const filteredActive = filteredToolsData.filter(tool => tool.status === 'active').length
+  const filteredTrial = filteredToolsData.filter(tool => tool.status === 'trial').length
 
-    return {
-      totalSpend: filteredSpend,
-      activeSubscriptions: filteredActive,
-      trialSubscriptions: filteredTrial
-    }
-  }, [filteredToolsData])
+  return {
+    totalSpend: filteredSpend,
+    activeSubscriptions: filteredActive,
+    trialSubscriptions: filteredTrial
+  }
+}, [filteredToolsData])
 
   return (
     <div className="min-h-screen bg-background">
@@ -123,10 +117,10 @@ export default function DashboardClient({
       <main className="container mx-auto px-4 py-8 space-y-8">
         {/* Monthly Spend Overview - show filtered or total based on whether filters are active */}
         <MonthlySpendCard
-          totalSpend={filters.search || filters.project !== "all" || filters.status !== "all" || filters.category !== "all" ? filteredTotals.totalSpend : totalSpend}
-          activeSubscriptions={filters.search || filters.project !== "all" || filters.status !== "all" || filters.category !== "all" ? filteredTotals.activeSubscriptions : activeSubscriptions}
-          trialSubscriptions={filters.search || filters.project !== "all" || filters.status !== "all" || filters.category !== "all" ? filteredTotals.trialSubscriptions : trialSubscriptions}
-        />
+  totalSpend={filters.search || filters.project !== "all" || filters.category !== "all" ? filteredTotals.totalSpend : totalSpend}
+  activeSubscriptions={filters.search || filters.project !== "all" || filters.category !== "all" ? filteredTotals.activeSubscriptions : activeSubscriptions}
+  trialSubscriptions={filters.search || filters.project !== "all" || filters.category !== "all" ? filteredTotals.trialSubscriptions : trialSubscriptions}
+/>
 
         {/* Filters */}
         <FiltersBar 
