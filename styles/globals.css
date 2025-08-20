@@ -184,9 +184,20 @@
   }
 
   /* Professional button enhancements */
-  button {
+ button {
     @apply transition-all duration-200 ease-in-out;
+    margin-bottom: 1rem !important;
   }
+
+.card-content {
+  padding: 1.5rem !important;
+}
+
+
+.container {
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+}
 
   /* Enhanced form inputs */
   input[type="text"], 
@@ -360,4 +371,10 @@
   .rounded-professional-lg {
     border-radius: var(--radius-lg);
   }
+
+  /* Global card spacing fix */
+* [class*="card"] {
+  padding-top: 1.5rem !important;
+  padding-bottom: 1.5rem !important;
+}
 }
