@@ -5,7 +5,8 @@ import DashboardHeader from "@/components/dashboard/dashboard-header"
 import MonthlySpendCard from "@/components/dashboard/monthly-spend-card"
 import FiltersBar, { FilterState } from "@/components/dashboard/filters-bar"
 import ToolsOverviewTable from "@/components/dashboard/tools-overview-table"
-import SavingsOpportunities from "@/components/dashboard/savings-opportunities"
+import SpendingByCategories from "@/components/dashboard/spending-by-categories"
+//import SavingsOpportunities from "@/components/dashboard/savings-opportunities"
 
 interface ToolOverview {
   toolId: string
@@ -133,8 +134,8 @@ export default function DashboardClient({
         {/* Tools Overview - always show filtered data */}
         <ToolsOverviewTable data={filteredToolsData} />
 
-        {/* Savings Opportunities */}
-        <SavingsOpportunities />
+        {/* Spending by Categories */}
+        <SpendingByCategories data={toolsOverviewData} />
       </main>
     </div>
   )
