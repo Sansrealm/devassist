@@ -117,8 +117,23 @@
   * {
     @apply border-border outline-ring/50;
   }
+  
+  html {
+    font-family: var(--font-sans);
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: var(--font-sans);
+  }
+  
+  /* Ensure all text elements use the correct font */
+  h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea {
+    font-family: var(--font-sans);
   }
 }
 
