@@ -117,206 +117,425 @@
   * {
     @apply border-border outline-ring/50;
   }
+  
+  html {
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+  }
+  
+  /* Improve font rendering */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-medium;
+    letter-spacing: -0.025em;
+    line-height: 1.3;
   }
 }
 
-/* UI Consistency Fixes */
+/* Comprehensive UI Fixes */
 @layer components {
-  /* Card Header Spacing Fixes */
+  
+  /* === CARD COMPONENTS === */
+  .card {
+    @apply bg-card text-card-foreground shadow-sm border border-border rounded-lg;
+  }
+  
   .card-header {
-    @apply px-6 py-5; /* Increased padding from default */
+    @apply p-8 pb-6; /* Generous padding, less bottom padding */
   }
   
   .card-title {
-    @apply leading-none tracking-tight mb-2; /* Better spacing and typography */
+    @apply text-xl font-semibold leading-tight tracking-tight text-foreground mb-0;
+    letter-spacing: -0.025em;
   }
   
   .card-description {
-    @apply text-sm text-muted-foreground mt-1 leading-relaxed;
+    @apply text-sm text-muted-foreground mt-2 leading-relaxed;
   }
   
   .card-content {
-    @apply px-6 py-4; /* Consistent padding with header */
+    @apply p-8 pt-0; /* Match header padding, no top padding */
   }
 
-  /* Form Element Alignment Fixes */
-  .form-row {
-    @apply flex flex-col sm:flex-row gap-4 items-end; /* Better alignment for form elements */
-  }
-  
-  .form-group {
-    @apply space-y-2; /* Consistent spacing for form groups */
-  }
-  
-  .form-label {
-    @apply text-sm font-medium leading-none; /* Better label typography */
-  }
-  
-  /* Search Input with Icon Alignment */
-  .search-input-container {
-    @apply relative flex-1;
-  }
-  
-  .search-input-container .search-icon {
-    @apply absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 pointer-events-none;
-  }
-  
-  .search-input-container input {
-    @apply pl-10 pr-4 py-2 h-10; /* Consistent height and padding */
-  }
-
-  /* Select Component Alignment */
-  .select-trigger {
-    @apply h-10 flex items-center justify-between px-3 py-2; /* Consistent height */
-  }
-
-  /* Badge Alignment Fixes */
-  .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 text-xs font-medium; /* Better badge consistency */
-  }
-  
-  /* Button Alignment in Tables */
-  .table-action-button {
-    @apply flex items-center justify-center h-8 w-8; /* Consistent icon button sizing */
-  }
-
-  /* Table Cell Alignment */
-  .table-cell {
-    @apply px-4 py-3 align-middle; /* Better vertical alignment */
-  }
-  
-  .table-header {
-    @apply px-4 py-3 text-left font-medium; /* Consistent header styling */
-  }
-
-  /* Dropdown Menu Alignment */
-  .dropdown-menu-item {
-    @apply flex items-center px-2 py-1.5 text-sm; /* Better item alignment */
-  }
-  
-  .dropdown-menu-item svg {
-    @apply mr-2 h-4 w-4 flex-shrink-0; /* Prevent icon shrinking */
-  }
-
-  /* Card Grid Consistency */
+  /* === STATS CARDS SPECIFIC === */
   .stats-card-grid {
-    @apply grid gap-4 md:grid-cols-3;
+    @apply grid gap-6 md:grid-cols-3; /* Increased gap */
   }
   
-  .stats-card {
-    @apply border-2 border-transparent;
+  .stats-card .card-header {
+    @apply p-6 pb-3; /* Smaller padding for stats cards */
   }
   
-  .stats-card-header {
-    @apply flex flex-row items-center justify-between space-y-0 pb-2;
+  .stats-card .card-content {
+    @apply p-6 pt-0;
   }
   
-  .stats-card-title {
-    @apply text-sm font-medium;
-  }
-  
-  .stats-card-content {
-    @apply pt-0;
+  .stats-card .card-title {
+    @apply text-sm font-medium text-foreground mb-0;
   }
   
   .stats-card-value {
-    @apply text-2xl font-bold;
+    @apply text-3xl font-bold text-foreground leading-none;
+    letter-spacing: -0.02em;
   }
   
   .stats-card-description {
+    @apply text-xs text-muted-foreground mt-2 leading-normal;
+  }
+
+  /* === FORM ELEMENTS === */
+  .form-container {
+    @apply space-y-8; /* Generous spacing between form sections */
+  }
+  
+  .form-group {
+    @apply space-y-3; /* More space between label and input */
+  }
+  
+  .form-row {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-6; /* Better responsive grid */
+  }
+  
+  .form-label {
+    @apply text-sm font-medium text-foreground leading-none block mb-3;
+  }
+  
+  .form-input {
+    @apply h-12 px-4 py-3 bg-background border border-border rounded-md text-sm;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+    @apply placeholder:text-muted-foreground;
+  }
+  
+  .form-textarea {
+    @apply min-h-[100px] px-4 py-3 bg-background border border-border rounded-md text-sm resize-y;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+    @apply placeholder:text-muted-foreground;
+  }
+  
+  .form-select {
+    @apply h-12 px-4 py-3 bg-background border border-border rounded-md text-sm;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+  }
+
+  /* === SEARCH INPUT === */
+  .search-container {
+    @apply relative flex-1;
+  }
+  
+  .search-icon {
+    @apply absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 pointer-events-none z-10;
+  }
+  
+  .search-input {
+    @apply h-12 pl-12 pr-4 py-3 w-full bg-background border border-border rounded-md text-sm;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+    @apply placeholder:text-muted-foreground;
+  }
+
+  /* === BUTTON IMPROVEMENTS === */
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-3 text-sm font-medium rounded-md;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+    @apply transition-colors duration-200;
+    min-height: 44px; /* Ensure touch-friendly size */
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-[#002F71] to-[#0A4BA0] text-white;
+    @apply hover:from-[#001f4d] hover:to-[#083d87] active:from-[#001a42] active:to-[#072e73];
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground border border-border;
+    @apply hover:bg-secondary/80;
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent text-foreground;
+    @apply hover:bg-accent hover:text-accent-foreground;
+  }
+  
+  .btn-icon {
+    @apply h-10 w-10 p-0 flex items-center justify-center rounded-md;
+  }
+
+  /* === TABLE IMPROVEMENTS === */
+  .table-container {
+    @apply rounded-lg border border-border overflow-hidden bg-card;
+  }
+  
+  .table {
+    @apply w-full border-collapse;
+  }
+  
+  .table-header {
+    @apply bg-muted/50 border-b border-border;
+  }
+  
+  .table-header-cell {
+    @apply px-6 py-4 text-left text-sm font-semibold text-foreground;
+    @apply first:pl-8 last:pr-8; /* Extra padding for first/last columns */
+  }
+  
+  .table-row {
+    @apply border-b border-border hover:bg-muted/50 transition-colors;
+  }
+  
+  .table-cell {
+    @apply px-6 py-4 text-sm text-foreground align-middle;
+    @apply first:pl-8 last:pr-8; /* Match header padding */
+  }
+
+  /* === BADGE IMPROVEMENTS === */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 text-xs font-medium rounded-full;
+    @apply border border-transparent;
+  }
+  
+  .badge-category-development {
+    @apply bg-purple-50 text-purple-700 border-purple-200;
+  }
+  
+  .badge-category-design {
+    @apply bg-pink-50 text-pink-700 border-pink-200;
+  }
+  
+  .badge-category-productivity {
+    @apply bg-orange-50 text-orange-700 border-orange-200;
+  }
+  
+  .badge-status-active {
+    @apply bg-green-50 text-green-700 border-green-200;
+  }
+  
+  .badge-status-trial {
+    @apply bg-blue-50 text-blue-700 border-blue-200;
+  }
+
+  /* === FILTER BAR === */
+  .filter-bar {
+    @apply flex flex-col lg:flex-row gap-4 items-stretch lg:items-end;
+  }
+  
+  .filter-bar > * {
+    @apply flex-shrink-0;
+  }
+  
+  .filter-bar .search-container {
+    @apply lg:flex-1 lg:max-w-md; /* Limit search width on large screens */
+  }
+
+  /* === MODAL/DIALOG IMPROVEMENTS === */
+  .modal-content {
+    @apply bg-card border border-border rounded-xl shadow-2xl;
+    @apply p-8 space-y-8; /* Generous padding and spacing */
+    max-width: 600px;
+    width: 90vw;
+  }
+  
+  .modal-header {
+    @apply pb-6 border-b border-border;
+  }
+  
+  .modal-title {
+    @apply text-2xl font-semibold text-foreground leading-tight;
+    letter-spacing: -0.025em;
+  }
+  
+  .modal-description {
+    @apply text-sm text-muted-foreground mt-2;
+  }
+  
+  .modal-footer {
+    @apply flex justify-end gap-4 pt-6 border-t border-border;
+  }
+
+  /* === CHECKBOX AND RADIO IMPROVEMENTS === */
+  .checkbox-container {
+    @apply flex items-center space-x-3 py-2; /* Better spacing */
+  }
+  
+  .checkbox {
+    @apply h-5 w-5 rounded border-2 border-border;
+    @apply focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+  
+  .checkbox-label {
+    @apply text-sm font-medium text-foreground leading-relaxed;
+  }
+  
+  .checkbox-description {
     @apply text-xs text-muted-foreground mt-1;
   }
 
-  /* Project Badge/Link Alignment */
+  /* === EMAIL ACCOUNTS SECTION === */
+  .email-accounts-container {
+    @apply space-y-4;
+  }
+  
+  .email-input-container {
+    @apply flex gap-3 items-center;
+  }
+  
+  .email-input {
+    @apply flex-1;
+  }
+  
+  .add-email-button {
+    @apply h-12 w-12 flex items-center justify-center rounded-md border-2 border-dashed border-border;
+    @apply hover:border-primary hover:bg-primary/5 transition-colors;
+  }
+  
+  .email-item {
+    @apply flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border;
+  }
+  
+  .email-item-content {
+    @apply flex items-center space-x-3;
+  }
+  
+  .email-item-text {
+    @apply text-sm font-medium text-foreground;
+  }
+  
+  .email-item-badge {
+    @apply text-xs bg-primary/10 text-primary px-2 py-1 rounded-full;
+  }
+
+  /* === PROJECT BADGES === */
   .project-badge {
-    @apply inline-flex items-center gap-1 px-2 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors;
+    @apply inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium;
+    @apply bg-muted hover:bg-muted/80 rounded-md transition-colors border border-border;
   }
   
   .project-badge svg {
-    @apply h-3 w-3 flex-shrink-0;
+    @apply h-3 w-3 text-muted-foreground;
   }
 
-  /* Savings Opportunities Layout */
-  .opportunity-item {
-    @apply flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors;
+  /* === SPENDING CATEGORY SECTION === */
+  .spending-category-container {
+    @apply space-y-6;
   }
   
-  .opportunity-content {
-    @apply flex items-center gap-4;
+  .spending-category-header {
+    @apply flex items-center justify-between;
   }
   
-  .opportunity-icon {
-    @apply p-2 rounded-full flex-shrink-0;
+  .spending-category-title {
+    @apply text-lg font-semibold text-foreground flex items-center gap-2;
   }
   
-  .opportunity-details h4 {
-    @apply font-medium leading-tight;
+  .spending-category-total {
+    @apply text-sm text-muted-foreground;
   }
   
-  .opportunity-details p {
-    @apply text-sm text-muted-foreground mt-1;
+  .spending-bar-container {
+    @apply space-y-4;
   }
   
-  .opportunity-actions {
-    @apply flex items-center gap-3;
+  .spending-bar {
+    @apply h-8 bg-muted rounded-full overflow-hidden;
+  }
+  
+  .spending-bar-fill {
+    @apply h-full bg-gradient-to-r from-[#002F71] to-[#0A4BA0] transition-all duration-500;
+  }
+  
+  .spending-labels {
+    @apply flex justify-between text-xs text-muted-foreground mt-2;
   }
 
-  /* Empty State Consistency */
-  .empty-state {
-    @apply text-center py-8;
-  }
-  
-  .empty-state-text {
-    @apply text-muted-foreground mb-4;
-  }
-
-  /* Filter Bar Specific Fixes */
-  .filter-controls {
-    @apply flex flex-col sm:flex-row gap-4 items-stretch sm:items-end;
-  }
-  
-  .filter-controls > * {
-    @apply flex-shrink-0; /* Prevent shrinking of filter elements */
-  }
-  
-  .filter-controls .flex-1 {
-    @apply sm:min-w-0; /* Allow search input to shrink on small screens */
-  }
-
-  /* Dashboard Header Navigation Alignment */
-  .nav-link {
-    @apply text-sm font-medium transition-colors hover:text-foreground/80;
-  }
-  
-  .nav-link.active {
-    @apply text-foreground;
-  }
-  
-  .nav-link.inactive {
-    @apply text-muted-foreground;
-  }
-
-  /* Avatar Dropdown Alignment */
-  .avatar-dropdown-label {
-    @apply font-normal;
-  }
-  
-  .avatar-dropdown-name {
-    @apply text-sm font-medium leading-none;
-  }
-  
-  .avatar-dropdown-email {
-    @apply text-xs leading-none text-muted-foreground mt-1;
-  }
-
-  /* Monthly Spend Card Gradient Border Fix */
+  /* === GRADIENT BORDER CARD === */
   .gradient-border-card {
-    @apply border-2 border-transparent bg-gradient-to-r from-[#002F71] to-[#0A4BA0] p-[2px];
+    @apply relative p-[2px] bg-gradient-to-r from-[#002F71] to-[#0A4BA0] rounded-lg;
   }
   
-  .gradient-border-card > div {
-    @apply bg-background rounded-[calc(var(--radius)-2px)] h-full;
+  .gradient-border-card > .card {
+    @apply bg-background border-0 rounded-[calc(var(--radius)-2px)] h-full shadow-none;
+  }
+
+  /* === RESPONSIVE IMPROVEMENTS === */
+  @media (max-width: 768px) {
+    .card-header {
+      @apply p-6 pb-4;
+    }
+    
+    .card-content {
+      @apply p-6 pt-0;
+    }
+    
+    .form-row {
+      @apply grid-cols-1 gap-4;
+    }
+    
+    .filter-bar {
+      @apply flex-col gap-3;
+    }
+    
+    .modal-content {
+      @apply p-6 space-y-6;
+    }
+    
+    .table-header-cell,
+    .table-cell {
+      @apply px-4 first:pl-6 last:pr-6;
+    }
+  }
+
+  /* === DARK MODE SPECIFIC IMPROVEMENTS === */
+  .dark .badge-category-development {
+    @apply bg-purple-950 text-purple-300 border-purple-800;
+  }
+  
+  .dark .badge-category-design {
+    @apply bg-pink-950 text-pink-300 border-pink-800;
+  }
+  
+  .dark .badge-category-productivity {
+    @apply bg-orange-950 text-orange-300 border-orange-800;
+  }
+  
+  .dark .badge-status-active {
+    @apply bg-green-950 text-green-300 border-green-800;
+  }
+  
+  .dark .badge-status-trial {
+    @apply bg-blue-950 text-blue-300 border-blue-800;
+  }
+}
+
+/* === UTILITY CLASSES === */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .font-feature-default {
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  }
+  
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: theme('colors.border');
+    border-radius: 3px;
   }
 }
