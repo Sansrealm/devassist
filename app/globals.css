@@ -130,412 +130,162 @@
     line-height: 1.6;
     letter-spacing: -0.01em;
   }
-  
-  /* Improve font rendering */
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-medium;
-    letter-spacing: -0.025em;
-    line-height: 1.3;
-  }
 }
 
-/* Comprehensive UI Fixes */
+/* Override existing Tailwind classes used in your components */
 @layer components {
   
-  /* === CARD COMPONENTS === */
-  .card {
-    @apply bg-card text-card-foreground shadow-sm border border-border rounded-lg;
+  /* Card improvements - targeting your existing usage */
+  .border.rounded-md,
+  .rounded-md.border {
+    @apply border-border rounded-lg !important;
   }
   
-  .card-header {
-    @apply p-8 pb-6; /* Generous padding, less bottom padding */
+  /* Card headers - your components use these exact classes */
+  .py-4.px-4,
+  .px-4.py-4 {
+    @apply px-8 py-6 !important;
   }
   
-  .card-title {
-    @apply text-xl font-semibold leading-tight tracking-tight text-foreground mb-0;
-    letter-spacing: -0.025em;
+  /* Card content spacing */
+  .py-8.px-4,
+  .px-4.py-8 {
+    @apply px-8 py-8 !important;
   }
   
-  .card-description {
-    @apply text-sm text-muted-foreground mt-2 leading-relaxed;
+  /* Card titles - targeting text-lg class you use */
+  .text-lg {
+    @apply text-xl font-semibold !important;
+    letter-spacing: -0.025em !important;
+    line-height: 1.3 !important;
   }
   
-  .card-content {
-    @apply p-8 pt-0; /* Match header padding, no top padding */
-  }
-
-  /* === STATS CARDS SPECIFIC === */
-  .stats-card-grid {
-    @apply grid gap-6 md:grid-cols-3; /* Increased gap */
+  /* Card descriptions */
+  .text-sm.text-muted-foreground {
+    @apply mt-2 leading-relaxed !important;
   }
   
-  .stats-card .card-header {
-    @apply p-6 pb-3; /* Smaller padding for stats cards */
+  /* Stats card values - targeting text-2xl class */
+  .text-2xl.font-bold {
+    @apply text-3xl font-bold !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.1 !important;
   }
   
-  .stats-card .card-content {
-    @apply p-6 pt-0;
+  /* Form inputs - targeting your h-10 and h-8 classes */
+  input.h-10,
+  select.h-10,
+  .h-10 input {
+    @apply h-12 px-4 !important;
   }
   
-  .stats-card .card-title {
-    @apply text-sm font-medium text-foreground mb-0;
+  /* Search input with icon */
+  .relative input.pl-10 {
+    @apply pl-12 h-12 !important;
   }
   
-  .stats-card-value {
-    @apply text-3xl font-bold text-foreground leading-none;
-    letter-spacing: -0.02em;
+  .absolute.left-3 {
+    @apply left-4 !important;
   }
   
-  .stats-card-description {
-    @apply text-xs text-muted-foreground mt-2 leading-normal;
-  }
-
-  /* === FORM ELEMENTS === */
-  .form-container {
-    @apply space-y-8; /* Generous spacing between form sections */
+  /* Button improvements */
+  .h-8.w-8 {
+    @apply h-10 w-10 !important;
   }
   
-  .form-group {
-    @apply space-y-3; /* More space between label and input */
+  /* Table cell padding improvements */
+  .px-4.py-3,
+  .py-3.px-4 {
+    @apply px-6 py-4 !important;
   }
   
-  .form-row {
-    @apply grid grid-cols-1 md:grid-cols-2 gap-6; /* Better responsive grid */
+  /* Table header improvements */
+  .text-left.font-medium {
+    @apply font-semibold !important;
   }
   
-  .form-label {
-    @apply text-sm font-medium text-foreground leading-none block mb-3;
+  /* Badge improvements */
+  .px-2\.5.py-0\.5,
+  .py-0\.5.px-2\.5 {
+    @apply px-3 py-1 !important;
   }
   
-  .form-input {
-    @apply h-12 px-4 py-3 bg-background border border-border rounded-md text-sm;
-    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
-    @apply placeholder:text-muted-foreground;
+  /* Container spacing improvements */
+  .container.mx-auto.px-4.py-8 {
+    @apply px-6 py-10 !important;
   }
   
-  .form-textarea {
-    @apply min-h-[100px] px-4 py-3 bg-background border border-border rounded-md text-sm resize-y;
-    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
-    @apply placeholder:text-muted-foreground;
+  /* Space between elements */
+  .space-y-8 > * + * {
+    margin-top: 2.5rem !important;
   }
   
-  .form-select {
-    @apply h-12 px-4 py-3 bg-background border border-border rounded-md text-sm;
-    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
-  }
-
-  /* === SEARCH INPUT === */
-  .search-container {
-    @apply relative flex-1;
+  .space-y-4 > * + * {
+    margin-top: 1.5rem !important;
   }
   
-  .search-icon {
-    @apply absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 pointer-events-none z-10;
+  /* Grid gap improvements */
+  .gap-4 {
+    @apply gap-6 !important;
   }
   
-  .search-input {
-    @apply h-12 pl-12 pr-4 py-3 w-full bg-background border border-border rounded-md text-sm;
-    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
-    @apply placeholder:text-muted-foreground;
-  }
-
-  /* === BUTTON IMPROVEMENTS === */
-  .btn {
-    @apply inline-flex items-center justify-center px-6 py-3 text-sm font-medium rounded-md;
-    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
-    @apply transition-colors duration-200;
-    min-height: 44px; /* Ensure touch-friendly size */
+  /* Flex gap improvements */
+  .flex.gap-4 {
+    @apply gap-6 !important;
   }
   
-  .btn-primary {
-    @apply bg-gradient-to-r from-[#002F71] to-[#0A4BA0] text-white;
-    @apply hover:from-[#001f4d] hover:to-[#083d87] active:from-[#001a42] active:to-[#072e73];
+  /* Modal and form spacing */
+  .p-4 {
+    @apply p-6 !important;
   }
   
-  .btn-secondary {
-    @apply bg-secondary text-secondary-foreground border border-border;
-    @apply hover:bg-secondary/80;
+  .p-6 {
+    @apply p-8 !important;
   }
   
-  .btn-ghost {
-    @apply bg-transparent text-foreground;
-    @apply hover:bg-accent hover:text-accent-foreground;
+  /* Border radius improvements */
+  .rounded-md {
+    @apply rounded-lg !important;
   }
   
-  .btn-icon {
-    @apply h-10 w-10 p-0 flex items-center justify-center rounded-md;
-  }
-
-  /* === TABLE IMPROVEMENTS === */
-  .table-container {
-    @apply rounded-lg border border-border overflow-hidden bg-card;
+  /* Focus states */
+  input:focus,
+  select:focus,
+  textarea:focus {
+    @apply ring-2 ring-ring ring-offset-2 !important;
   }
   
-  .table {
-    @apply w-full border-collapse;
-  }
-  
-  .table-header {
-    @apply bg-muted/50 border-b border-border;
-  }
-  
-  .table-header-cell {
-    @apply px-6 py-4 text-left text-sm font-semibold text-foreground;
-    @apply first:pl-8 last:pr-8; /* Extra padding for first/last columns */
-  }
-  
-  .table-row {
-    @apply border-b border-border hover:bg-muted/50 transition-colors;
-  }
-  
-  .table-cell {
-    @apply px-6 py-4 text-sm text-foreground align-middle;
-    @apply first:pl-8 last:pr-8; /* Match header padding */
-  }
-
-  /* === BADGE IMPROVEMENTS === */
-  .badge {
-    @apply inline-flex items-center px-3 py-1 text-xs font-medium rounded-full;
-    @apply border border-transparent;
-  }
-  
-  .badge-category-development {
-    @apply bg-purple-50 text-purple-700 border-purple-200;
-  }
-  
-  .badge-category-design {
-    @apply bg-pink-50 text-pink-700 border-pink-200;
-  }
-  
-  .badge-category-productivity {
-    @apply bg-orange-50 text-orange-700 border-orange-200;
-  }
-  
-  .badge-status-active {
-    @apply bg-green-50 text-green-700 border-green-200;
-  }
-  
-  .badge-status-trial {
-    @apply bg-blue-50 text-blue-700 border-blue-200;
-  }
-
-  /* === FILTER BAR === */
-  .filter-bar {
-    @apply flex flex-col lg:flex-row gap-4 items-stretch lg:items-end;
-  }
-  
-  .filter-bar > * {
-    @apply flex-shrink-0;
-  }
-  
-  .filter-bar .search-container {
-    @apply lg:flex-1 lg:max-w-md; /* Limit search width on large screens */
-  }
-
-  /* === MODAL/DIALOG IMPROVEMENTS === */
-  .modal-content {
-    @apply bg-card border border-border rounded-xl shadow-2xl;
-    @apply p-8 space-y-8; /* Generous padding and spacing */
-    max-width: 600px;
-    width: 90vw;
-  }
-  
-  .modal-header {
-    @apply pb-6 border-b border-border;
-  }
-  
-  .modal-title {
-    @apply text-2xl font-semibold text-foreground leading-tight;
-    letter-spacing: -0.025em;
-  }
-  
-  .modal-description {
-    @apply text-sm text-muted-foreground mt-2;
-  }
-  
-  .modal-footer {
-    @apply flex justify-end gap-4 pt-6 border-t border-border;
-  }
-
-  /* === CHECKBOX AND RADIO IMPROVEMENTS === */
-  .checkbox-container {
-    @apply flex items-center space-x-3 py-2; /* Better spacing */
-  }
-  
-  .checkbox {
-    @apply h-5 w-5 rounded border-2 border-border;
-    @apply focus:ring-2 focus:ring-ring focus:ring-offset-2;
-  }
-  
-  .checkbox-label {
-    @apply text-sm font-medium text-foreground leading-relaxed;
-  }
-  
-  .checkbox-description {
-    @apply text-xs text-muted-foreground mt-1;
-  }
-
-  /* === EMAIL ACCOUNTS SECTION === */
-  .email-accounts-container {
-    @apply space-y-4;
-  }
-  
-  .email-input-container {
-    @apply flex gap-3 items-center;
-  }
-  
-  .email-input {
-    @apply flex-1;
-  }
-  
-  .add-email-button {
-    @apply h-12 w-12 flex items-center justify-center rounded-md border-2 border-dashed border-border;
-    @apply hover:border-primary hover:bg-primary/5 transition-colors;
-  }
-  
-  .email-item {
-    @apply flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border;
-  }
-  
-  .email-item-content {
-    @apply flex items-center space-x-3;
-  }
-  
-  .email-item-text {
-    @apply text-sm font-medium text-foreground;
-  }
-  
-  .email-item-badge {
-    @apply text-xs bg-primary/10 text-primary px-2 py-1 rounded-full;
-  }
-
-  /* === PROJECT BADGES === */
-  .project-badge {
-    @apply inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium;
-    @apply bg-muted hover:bg-muted/80 rounded-md transition-colors border border-border;
-  }
-  
-  .project-badge svg {
-    @apply h-3 w-3 text-muted-foreground;
-  }
-
-  /* === SPENDING CATEGORY SECTION === */
-  .spending-category-container {
-    @apply space-y-6;
-  }
-  
-  .spending-category-header {
-    @apply flex items-center justify-between;
-  }
-  
-  .spending-category-title {
-    @apply text-lg font-semibold text-foreground flex items-center gap-2;
-  }
-  
-  .spending-category-total {
-    @apply text-sm text-muted-foreground;
-  }
-  
-  .spending-bar-container {
-    @apply space-y-4;
-  }
-  
-  .spending-bar {
-    @apply h-8 bg-muted rounded-full overflow-hidden;
-  }
-  
-  .spending-bar-fill {
-    @apply h-full bg-gradient-to-r from-[#002F71] to-[#0A4BA0] transition-all duration-500;
-  }
-  
-  .spending-labels {
-    @apply flex justify-between text-xs text-muted-foreground mt-2;
-  }
-
-  /* === GRADIENT BORDER CARD === */
-  .gradient-border-card {
-    @apply relative p-[2px] bg-gradient-to-r from-[#002F71] to-[#0A4BA0] rounded-lg;
-  }
-  
-  .gradient-border-card > .card {
-    @apply bg-background border-0 rounded-[calc(var(--radius)-2px)] h-full shadow-none;
-  }
-
-  /* === RESPONSIVE IMPROVEMENTS === */
-  @media (max-width: 768px) {
-    .card-header {
-      @apply p-6 pb-4;
-    }
-    
-    .card-content {
-      @apply p-6 pt-0;
-    }
-    
-    .form-row {
-      @apply grid-cols-1 gap-4;
-    }
-    
-    .filter-bar {
-      @apply flex-col gap-3;
-    }
-    
-    .modal-content {
-      @apply p-6 space-y-6;
-    }
-    
-    .table-header-cell,
-    .table-cell {
-      @apply px-4 first:pl-6 last:pr-6;
-    }
-  }
-
-  /* === DARK MODE SPECIFIC IMPROVEMENTS === */
-  .dark .badge-category-development {
-    @apply bg-purple-950 text-purple-300 border-purple-800;
-  }
-  
-  .dark .badge-category-design {
-    @apply bg-pink-950 text-pink-300 border-pink-800;
-  }
-  
-  .dark .badge-category-productivity {
-    @apply bg-orange-950 text-orange-300 border-orange-800;
-  }
-  
-  .dark .badge-status-active {
-    @apply bg-green-950 text-green-300 border-green-800;
-  }
-  
-  .dark .badge-status-trial {
-    @apply bg-blue-950 text-blue-300 border-blue-800;
+  /* Dropdown menu items */
+  .flex.items-center.px-2.py-1\.5 {
+    @apply px-3 py-2 !important;
   }
 }
 
-/* === UTILITY CLASSES === */
+/* Specific overrides for your gradient border card */
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .border-2.border-transparent.bg-gradient-to-r {
+    @apply p-[3px] !important;
   }
   
-  .font-feature-default {
-    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  /* Better font rendering */
+  .font-bold,
+  .font-semibold,
+  .font-medium {
+    font-feature-settings: "kern" 1, "liga" 1 !important;
+    -webkit-font-smoothing: antialiased !important;
   }
   
-  .scrollbar-thin {
-    scrollbar-width: thin;
+  /* Improve text readability */
+  .text-foreground {
+    letter-spacing: -0.01em !important;
   }
   
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  /* Better button spacing */
+  .bg-gradient-to-r.from-\[--002F71\],
+  .hover\:from-\[--001f4d\] {
+    @apply px-6 py-3 min-h-[44px] !important;
   }
-  
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: theme('colors.border');
-    border-radius: 3px;
-  }
+  body {
+  color: red !important;
+}
 }
