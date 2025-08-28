@@ -16,6 +16,7 @@ import { signOut } from "@/lib/auth/actions"
 import { useTheme } from "next-themes"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
+import { Sun, Moon } from "lucide-react"
 
 interface DashboardHeaderProps {
   user: {
