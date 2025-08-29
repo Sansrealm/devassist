@@ -57,10 +57,10 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
           <div className="flex items-center space-x-8">
             <Link href="/dashboard" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
               <div className="h-8 w-8 bg-gradient-to-r from-[#002F71] to-[#0A4BA0] rounded-lg flex items-center justify-center shadow-[var(--shadow-soft)]">
-                <span className="text-white font-bold text-sm">DS</span>
+                <span className="text-white font-bold text-sm">Viz</span>
               </div>
               <div className="hidden sm:block">
-                <span className="font-bold text-xl tracking-tight">DevStack Companion</span>
+                <span className="font-bold text-xl tracking-tight">Vizibl</span>
                 <p className="text-xs text-muted-foreground">Development tool management</p>
               </div>
             </Link>

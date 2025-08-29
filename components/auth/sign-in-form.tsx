@@ -38,7 +38,7 @@ export default function SignInForm() {
   return (
     <div className="w-full max-w-md space-y-8">
       <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">DevStack Companion</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Vizibl</h1>
         <p className="mt-2 text-muted-foreground">Track your development tools and subscriptions</p>
       </div>
 

@@ -6,9 +6,9 @@ import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "DevStack Companion",
+  title: "Vizibl: Your DevStack Companion",
   description: "Track your development tools and subscriptions",
-  generator: "v0.app",
+  generator: "Vizibl",
 }
 
 export default function RootLayout({
