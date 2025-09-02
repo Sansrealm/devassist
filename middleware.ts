@@ -16,6 +16,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Skip authentication for cron jobs
+  if (request.nextUrl.pathname.startsWith("/api/cron/")) {
+    return NextResponse.next()
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
