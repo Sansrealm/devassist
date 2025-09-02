@@ -46,14 +46,66 @@ export default async function EditToolPage({ params }: EditToolPageProps) {
       console.error("Emails fetch error:", emailsError)
     }
 
-    // Transform emails data to match expected format
-    const userEmails = (emails || []).map(email => ({
-      id: email.id,
-      email: email.email,
-      isPrimary: email.is_primary || false
-    }))
+    // NEW: Fetch tool accounts and subscription data
+    const { data: toolAccounts, error: toolAccountsError } = await supabase
+      .from('tool_accounts')
+      .select(`
+        id,
+        email_id,
+        subscriptions (
+          id,
+          cost,
+          billing_cycle,
+          renewal_date,
+          trial_end_date,
+          status
+        )
+      `)
+      .eq('tool_id', params.id)
+      .eq('user_id', user.id)
 
-    // Transform tool data to match expected format
+    if (toolAccountsError) {
+      console.error("Tool accounts fetch error:", toolAccountsError)
+    }
+
+    console.log("🔍 Tool accounts with subscriptions:", toolAccounts)
+
+    // Transform emails data to match expected format
+    const userEmails = (emails || []).map(email => {
+      // Check if this email is already associated with the tool
+      const isAssociated = toolAccounts?.some(ta => ta.email_id === email.id) || false
+      
+      return {
+        id: email.id,
+        email: email.email,
+        isPrimary: email.is_primary || false,
+        isAssociated // Add this for pre-checking in the form
+      }
+    })
+
+    // Extract subscription data (use the first subscription if multiple exist)
+    const firstSubscription = toolAccounts?.[0]?.subscriptions?.[0]
+    const subscriptionData = firstSubscription ? {
+      renewalDate: firstSubscription.renewal_date 
+        ? new Date(firstSubscription.renewal_date).toISOString().split('T')[0] 
+        : null,
+      trialEndDate: firstSubscription.trial_end_date 
+        ? new Date(firstSubscription.trial_end_date).toISOString().split('T')[0] 
+        : null,
+      billingCycle: firstSubscription.billing_cycle || null,
+      cost: firstSubscription.cost?.toString() || null,
+      status: firstSubscription.status || null
+    } : {
+      renewalDate: null,
+      trialEndDate: null,
+      billingCycle: null,
+      cost: null,
+      status: null
+    }
+
+    console.log("📅 Extracted subscription data:", subscriptionData)
+
+    // Transform tool data to match expected format (now includes subscription fields)
     const initialData = {
       id: tool.id,
       name: tool.name,
@@ -62,6 +114,10 @@ export default async function EditToolPage({ params }: EditToolPageProps) {
       logoUrl: tool.logo_url,
       websiteUrl: tool.website_url,
       baseCost: tool.base_cost,
+      // Add subscription fields
+      renewalDate: subscriptionData.renewalDate,
+      trialEndDate: subscriptionData.trialEndDate,
+      billingCycle: subscriptionData.billingCycle,
     }
 
     return (

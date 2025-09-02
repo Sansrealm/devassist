@@ -21,6 +21,10 @@ const toolSchema = z.object({
       return !Number.isNaN(num) && num >= 0
     }, "Base cost must be a valid positive number")
     .optional(),
+  // Add subscription fields
+  renewalDate: z.string().optional(),
+  trialEndDate: z.string().optional(),
+  billingCycle: z.enum(["monthly", "yearly", "quarterly", "one-time"]).optional(),
 })
 
 export async function createTool(prevState: any, formData: FormData) {
@@ -34,7 +38,7 @@ export async function createTool(prevState: any, formData: FormData) {
       redirect("/sign-in")
     }
 
-    // Extract and validate form data
+    // Extract and validate form data (including subscription fields)
     const rawData = {
       name: formData.get("name") as string,
       description: formData.get("description") as string,
@@ -42,14 +46,23 @@ export async function createTool(prevState: any, formData: FormData) {
       websiteUrl: formData.get("websiteUrl") as string,
       logoUrl: formData.get("logoUrl") as string,
       baseCost: formData.get("baseCost") as string,
+      // Extract subscription fields
+      renewalDate: formData.get("renewalDate") as string,
+      trialEndDate: formData.get("trialEndDate") as string,
+      billingCycle: formData.get("billingCycle") as string,
     }
 
     // Get selected email IDs and new emails
     const emailIds = formData.getAll("emailIds") as string[]
     const newEmails = formData.getAll("newEmails") as string[]
 
-    console.log("📧 Email IDs:", emailIds)
-    console.log("📧 New emails:", newEmails)
+    console.log("🔧 Email IDs:", emailIds)
+    console.log("🔧 New emails:", newEmails)
+    console.log("📅 Subscription data:", {
+      renewalDate: rawData.renewalDate,
+      trialEndDate: rawData.trialEndDate,
+      billingCycle: rawData.billingCycle
+    })
 
     // ENHANCED: Require at least one email (existing or new)
     const toolId = formData.get("id") as string
@@ -218,13 +231,61 @@ export async function createTool(prevState: any, formData: FormData) {
         account_name: validatedData.name,
       }))
 
-      const { error: accountsError } = await supabase
+      const { data: createdToolAccounts, error: accountsError } = await supabase
         .from('tool_accounts')
         .insert(toolAccountsData)
+        .select('id')
 
       if (accountsError) {
         console.error("Tool accounts creation error:", accountsError)
         return { error: "Failed to assign tool to emails. Please try again." }
+      }
+
+      // NEW: Handle subscription data
+      if (validatedData.renewalDate || validatedData.trialEndDate || validatedData.billingCycle) {
+        // Remove existing subscriptions if editing
+        if (toolId) {
+          const { error: deleteSubsError } = await supabase
+            .from('subscriptions')
+            .delete()
+            .eq('user_id', user.id)
+            .in('tool_account_id', createdToolAccounts.map(ta => ta.id))
+
+          if (deleteSubsError) {
+            console.error("Subscriptions deletion error:", deleteSubsError)
+          }
+        }
+
+        // Create subscriptions for each tool account
+        const subscriptionData = createdToolAccounts.map((toolAccount) => {
+          const subscriptionCost = validatedData.baseCost ? parseFloat(validatedData.baseCost) : 0
+
+          return {
+            user_id: user.id,
+            tool_account_id: toolAccount.id,
+            name: `${validatedData.name} Subscription`,
+            cost: subscriptionCost,
+            currency: 'USD',
+            billing_cycle: validatedData.billingCycle || 'monthly',
+            status: validatedData.trialEndDate ? 'trial' : 'active',
+            start_date: new Date().toISOString(),
+            renewal_date: validatedData.renewalDate || null,
+            trial_end_date: validatedData.trialEndDate || null,
+            is_auto_renew: true,
+          }
+        })
+
+        const { error: subscriptionError } = await supabase
+          .from('subscriptions')
+          .insert(subscriptionData)
+
+        if (subscriptionError) {
+          console.error("Subscription creation error:", subscriptionError)
+          // Don't fail the entire operation for subscription errors
+          console.warn("Tool created but subscription creation failed")
+        } else {
+          console.log("✅ Subscriptions created successfully")
+        }
       }
     }
 
