@@ -9,6 +9,7 @@ import {
 import { sendNotificationEmail } from "./resend"
 import { getNotificationContent } from "./templates"
 import { NotificationType, NotificationJob, BulkNotificationResult, SubscriptionForNotification } from "./types"
+import { createClient } from "@/lib/supabase/server"
 
 /**
  * Define notification schedules
@@ -151,20 +152,99 @@ async function sendPendingNotifications(): Promise<BulkNotificationResult> {
         continue
       }
       
-      // For now, just mark as sent without actually sending email
-      // Full email integration will be added when subscription details are available
-      const success = await markNotificationAsSent(notification.id)
-      
-      if (success) {
-        sent++
-        console.log(`📧 Marked notification as sent: ${notification.title}`)
+      // Get subscription data from the related_id
+      if (notification.relatedId && (notification.type === 'trial_expiring' || notification.type === 'renewal_reminder')) {
+        // Get subscription details for email
+        const supabase = createClient()
+        const { data: subscription, error: subError } = await supabase
+          .from('subscriptions')
+          .select(`
+            id,
+            user_id,
+            tool_account_id,
+            name,
+            cost,
+            currency,
+            billing_cycle,
+            status,
+            trial_end_date,
+            renewal_date,
+            tool_accounts!inner (
+              tools!inner (
+                name
+              ),
+              emails!inner (
+                email
+              )
+            )
+          `)
+          .eq('id', notification.relatedId)
+          .single()
+
+        if (subError || !subscription) {
+          errors.push(`Failed to get subscription details for notification ${notification.id}`)
+          continue
+        }
+
+        // Transform subscription data
+        const subscriptionData: SubscriptionForNotification = {
+          id: subscription.id,
+          userId: subscription.user_id,
+          toolAccountId: subscription.tool_account_id,
+          name: subscription.name,
+          cost: Number(subscription.cost),
+          currency: subscription.currency,
+          billingCycle: subscription.billing_cycle as 'monthly' | 'yearly' | 'one-time' | 'usage-based',
+          status: subscription.status as 'active' | 'trial' | 'cancelled' | 'expired',
+          trialEndDate: subscription.trial_end_date ? new Date(subscription.trial_end_date) : null,
+          renewalDate: subscription.renewal_date ? new Date(subscription.renewal_date) : null,
+          toolName: subscription.tool_accounts.tools.name,
+          userEmail: subscription.tool_accounts.emails.email
+        }
+
+        // Calculate days until event
+        const eventDate = notification.type === 'trial_expiring' 
+          ? subscriptionData.trialEndDate 
+          : subscriptionData.renewalDate
+
+        const daysUntilEvent = eventDate 
+          ? Math.ceil((eventDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+          : 0
+
+        // Send the actual email
+        const emailResult = await sendNotificationEmail(
+          subscriptionData,
+          notification.type,
+          userEmail,
+          Math.max(0, daysUntilEvent)
+        )
+
+        if (emailResult.success) {
+          // Mark notification as sent
+          const success = await markNotificationAsSent(notification.id)
+          if (success) {
+            sent++
+            console.log(`📧 Email sent successfully: ${notification.title}`)
+          } else {
+            errors.push(`Email sent but failed to mark notification ${notification.id} as sent`)
+          }
+        } else {
+          errors.push(`Failed to send email for notification ${notification.id}: ${emailResult.error}`)
+        }
       } else {
-        errors.push(`Failed to mark notification ${notification.id} as sent`)
+        // For other notification types, just mark as sent for now
+        const success = await markNotificationAsSent(notification.id)
+        if (success) {
+          sent++
+          console.log(`📧 Marked notification as sent: ${notification.title}`)
+        } else {
+          errors.push(`Failed to mark notification ${notification.id} as sent`)
+        }
       }
       
     } catch (error) {
-      errors.push(`Error sending notification ${notification.id}: ${error}`)
-      console.error(`Error sending notification ${notification.id}:`, error)
+      errors.push(`Error processing notification ${notification.id}: ${error}`)
+      console.error(`Error processing notification ${notification.id}:`, error)
     }
   }
   
