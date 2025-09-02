@@ -21,13 +21,13 @@ ${isToday ? 'Your trial has ended and you may lose access to the tool.' : 'Consi
 Manage your subscriptions: https://vizibl.live/dashboard
 
 Best regards,
-DevStack Companion Team
+Vizibl Team
 `.trim()
 
   const html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background: linear-gradient(135deg, #002F71 0%, #0A4BA0 100%); padding: 20px; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">DevStack Companion</h1>
+    <h1 style="color: white; margin: 0; font-size: 24px;">Vizibl</h1>
   </div>
   
   <div style="padding: 30px; background: #ffffff;">
@@ -57,7 +57,7 @@ DevStack Companion Team
     
     <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; text-align: center;">
       <p style="color: #6b7280; font-size: 14px; margin: 0;">
-        This notification was sent by DevStack Companion to help you track your tool subscriptions.
+        This notification was sent by Vizibl to help you track your tool subscriptions.
       </p>
     </div>
   </div>
@@ -93,13 +93,13 @@ ${isToday ? 'Your subscription is renewing today.' : 'You have time to make chan
 Manage your subscriptions: https://vizibl.live/dashboard
 
 Best regards,
-DevStack Companion Team
+Vizibl Team
 `.trim()
 
   const html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background: linear-gradient(135deg, #002F71 0%, #0A4BA0 100%); padding: 20px; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">DevStack Companion</h1>
+    <h1 style="color: white; margin: 0; font-size: 24px;">Vizibl</h1>
   </div>
   
   <div style="padding: 30px; background: #ffffff;">
@@ -143,7 +143,7 @@ DevStack Companion Team
     
     <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; text-align: center;">
       <p style="color: #6b7280; font-size: 14px; margin: 0;">
-        This notification was sent by DevStack Companion to help you track your tool subscriptions.
+        This notification was sent by Vizibl to help you track your tool subscriptions.
       </p>
     </div>
   </div>
