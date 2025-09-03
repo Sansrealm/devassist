@@ -50,6 +50,7 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Filters</CardTitle>
+          <CardDescription>Quick find by product name or description</CardDescription>
           {hasActiveFilters && (
             <Button 
               variant="ghost" 
