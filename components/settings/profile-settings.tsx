@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useState, useRef } from "react"
 import { useFormStatus } from "react-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Loader2, Upload } from "lucide-react"
-import { updateProfile } from "@/lib/settings/actions"
+import { updateProfile, uploadAvatar } from "@/lib/settings/actions"
+import { toast } from "@/hooks/use-toast"
 
 interface Profile {
   id: string
@@ -34,7 +35,6 @@ interface ProfileSettingsProps {
 
 function SubmitButton() {
   const { pending } = useFormStatus()
-
   return (
     <Button
       type="submit"
@@ -55,6 +55,9 @@ function SubmitButton() {
 
 export default function ProfileSettings({ user, profile }: ProfileSettingsProps) {
   const [state, formAction] = useActionState(updateProfile, null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatarUrl || null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const timezones = [
     "UTC",
@@ -70,6 +73,40 @@ export default function ProfileSettings({ user, profile }: ProfileSettingsProps)
     "Australia/Sydney",
   ]
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    const formData = new FormData()
+    formData.append("avatarFile", file)
+
+    const result = await uploadAvatar(null, formData)
+    
+    if (result.success && result.avatarUrl) {
+      setAvatarUrl(result.avatarUrl)
+      toast({
+        title: "Success",
+        description: "Profile image updated!",
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to upload image.",
+        variant: "destructive",
+      })
+    }
+    setIsUploading(false)
+  }
+
+  const handleFormAction = async (formData: FormData) => {
+    // If the avatarUrl state has changed, use that value
+    if (avatarUrl !== profile?.avatarUrl) {
+        formData.set('avatarUrl', avatarUrl || '');
+    }
+    formAction(formData);
+  };
+
   return (
     <Card className="border-2 border-transparent bg-gradient-to-r from-[#002F71] to-[#0A4BA0] p-[2px]">
       <div className="bg-background rounded-[calc(var(--radius)-2px)]">
@@ -78,7 +115,9 @@ export default function ProfileSettings({ user, profile }: ProfileSettingsProps)
           <CardDescription>Update your personal information and preferences</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <form action={formAction} className="space-y-6">
+          <form action={handleFormAction} className="space-y-6">
+            <input type="hidden" name="id" value={profile?.id || ''} />
+
             {state?.error && (
               <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded-md text-sm">
                 {state.error}
@@ -94,16 +133,13 @@ export default function ProfileSettings({ user, profile }: ProfileSettingsProps)
             {/* Avatar Section */}
             <div className="flex items-center space-x-4">
               <Avatar className="h-20 w-20">
-                <AvatarImage
-                  src={profile?.avatarUrl || user.user_metadata?.avatar_url || "/placeholder.svg"}
-                  alt="Profile"
-                />
+                <AvatarImage src={avatarUrl || user.user_metadata?.avatar_url || "/placeholder.svg"} alt="Profile" />
                 <AvatarFallback className="text-lg">
                   {profile?.firstName?.charAt(0) || user.email?.charAt(0).toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">
-                <Label htmlFor="avatarUrl">Avatar URL</Label>
+                <Label htmlFor="avatarUrl">Avatar</Label>
                 <div className="flex space-x-2">
                   <Input
                     id="avatarUrl"
@@ -113,10 +149,30 @@ export default function ProfileSettings({ user, profile }: ProfileSettingsProps)
                     defaultValue={profile?.avatarUrl || ""}
                     className="flex-1"
                   />
-                  <Button type="button" variant="outline" size="icon">
-                    <Upload className="h-4 w-4" />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleFileChange}
+                    accept="image/png, image/jpeg, image/gif, image/svg+xml"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  You can upload an image or provide a URL.
+                </p>
               </div>
             </div>
 
