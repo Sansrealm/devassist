@@ -2,8 +2,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { MoreHorizontal, ExternalLink, FolderOpen } from "lucide-react"
+import { MoreHorizontal, ExternalLink, FolderOpen, Lightbulb } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
 
 interface ToolOverview {
@@ -108,7 +109,30 @@ export default function ToolsOverviewTable({ data }: ToolsOverviewTableProps) {
               <TableBody>
                 {data.map((tool) => (
                   <TableRow key={tool.toolId}>
-                    <TableCell className="font-medium">{tool.toolName}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <span>{tool.toolName}</span>
+                        {/* Under-utilization indicator */}
+                        {tool.projectCount === 0 && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Lightbulb className="h-4 w-4 text-yellow-500 cursor-pointer" />
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-muted text-muted-foreground border-border max-w-xs space-y-2">
+                                <p>You don't use this product much. Assign it to a project or consider unsubscribing.</p>
+                                <Button asChild size="sm" className="w-full bg-gradient-to-r from-[#002F71] to-[#0A4BA0] hover:from-[#001f4d] hover:to-[#083d87]">
+                                  <Link href={`/map?tool=${tool.toolId}`}>
+                                    <FolderOpen className="h-4 w-4 mr-2" />
+                                    Map to a Project
+                                  </Link>
+                                </Button>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {tool.toolCategory && (
                         <Badge variant="outline" className={getCategoryColor(tool.toolCategory)}>
@@ -127,9 +151,9 @@ export default function ToolsOverviewTable({ data }: ToolsOverviewTableProps) {
                         </Badge>
                       )}
                     </TableCell>
-                   <TableCell>
-  {tool.status === 'trial' ? formatDate(tool.trialEndDate) : formatDate(tool.renewalDate)}
-</TableCell>
+                    <TableCell>
+                      {tool.status === 'trial' ? formatDate(tool.trialEndDate) : formatDate(tool.renewalDate)}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{tool.projectCount}</span>

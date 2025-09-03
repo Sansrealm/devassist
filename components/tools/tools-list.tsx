@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { MoreHorizontal, ExternalLink, Edit, Trash2, Users, DollarSign } from "lucide-react"
+import { MoreHorizontal, ExternalLink, Edit, Trash2, Users, DollarSign, FolderOpen } from "lucide-react"
 import { deleteTool } from "@/lib/tools/actions"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
@@ -36,6 +36,12 @@ export default function ToolsList({ tools }: ToolsListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [toolToDelete, setToolToDelete] = useState<Tool | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Helper function to check if a tool was created in the last 24 hours
+  const isNewlyAdded = (tool: Tool) => {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    return new Date(tool.createdAt) > twentyFourHoursAgo
+  }
 
   const getCategoryColor = (category: string | null) => {
     switch (category) {
@@ -85,12 +91,10 @@ export default function ToolsList({ tools }: ToolsListProps) {
           description: `${toolToDelete.name} has been deleted.`,
         })
         
-        // Clean up state first
         setDeleteDialogOpen(false)
         setToolToDelete(null)
         setIsDeleting(false)
         
-        // Use a more reliable refresh method
         setTimeout(() => {
           window.location.href = window.location.pathname
         }, 500)
@@ -183,12 +187,26 @@ export default function ToolsList({ tools }: ToolsListProps) {
               </div>
 
               <div className="flex space-x-2">
-                <Button variant="outline" size="sm" className="flex-1 bg-transparent" asChild>
-                  <Link href={`/tools/${tool.id}`}>View</Link>
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1 bg-transparent" asChild>
-                  <Link href={`/tools/${tool.id}/edit`}>Edit</Link>
-                </Button>
+                {isNewlyAdded(tool) && tool.accountCount === 0 ? (
+                  <Button
+                    asChild
+                    className="flex-1 bg-gradient-to-r from-[#002F71] to-[#0A4BA0] hover:from-[#001f4d] hover:to-[#083d87]"
+                  >
+                    <Link href={`/map?tool=${tool.id}`}>
+                      <FolderOpen className="h-4 w-4 mr-2" />
+                      Link to a Project
+                    </Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" size="sm" className="flex-1 bg-transparent" asChild>
+                      <Link href={`/tools/${tool.id}`}>View</Link>
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1 bg-transparent" asChild>
+                      <Link href={`/tools/${tool.id}/edit`}>Edit</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
