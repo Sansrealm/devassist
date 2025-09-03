@@ -157,29 +157,7 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
               />
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="websiteUrl">Website URL</Label>
-                <Input
-                  id="websiteUrl"
-                  name="websiteUrl"
-                  type="url"
-                  placeholder="https://example.com"
-                  defaultValue={initialData?.websiteUrl || ""}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="logoUrl">Logo URL</Label>
-                <Input
-                  id="logoUrl"
-                  name="logoUrl"
-                  type="url"
-                  placeholder="https://example.com/logo.png"
-                  defaultValue={initialData?.logoUrl || ""}
-                />
-              </div>
-            </div>
+            
 
             <div className="space-y-2">
               <Label htmlFor="baseCost">Base Cost (USD)</Label>
