@@ -41,15 +41,7 @@ export default function ToolsHeader({ filters, onFiltersChange, categories }: To
           <h1 className="text-3xl font-bold tracking-tight">Tools</h1>
           <p className="text-muted-foreground">Manage your development tools and subscriptions</p>
         </div>
-        <Button
-          asChild
-          className="bg-gradient-to-r from-[#002F71] to-[#0A4BA0] hover:from-[#001f4d] hover:to-[#083d87]"
-        >
-          <Link href="/tools/new">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Tool
-          </Link>
-        </Button>
+       
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
