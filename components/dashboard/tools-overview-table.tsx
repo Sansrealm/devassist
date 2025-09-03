@@ -127,7 +127,9 @@ export default function ToolsOverviewTable({ data }: ToolsOverviewTableProps) {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>{formatDate(tool.renewalDate)}</TableCell>
+                   <TableCell>
+  {tool.status === 'trial' ? formatDate(tool.trialEndDate) : formatDate(tool.renewalDate)}
+</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{tool.projectCount}</span>

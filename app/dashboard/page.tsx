@@ -41,7 +41,7 @@ export default async function DashboardPage() {
       // Get subscription data
       supabase
         .from('subscriptions')
-        .select('cost, billing_cycle, status, renewal_date, tool_account_id')
+        .select('cost, billing_cycle, status, renewal_date, trial_end_date, tool_account_id')
         .eq('user_id', user.id),
 
       // Get tools with tool accounts
@@ -114,7 +114,9 @@ export default async function DashboardPage() {
         // Calculate cost (subscription cost or base cost)
         let monthlyCost = 0
         let renewalDate = null
+        let trialEndDate = null
         let status = null
+        
 
         if (toolSubscriptions.length > 0) {
           // Use subscription data
@@ -122,6 +124,7 @@ export default async function DashboardPage() {
           const cost = parseFloat(activeSub.cost) || 0
           monthlyCost = activeSub.billing_cycle === 'yearly' ? cost / 12 : cost
           renewalDate = activeSub.renewal_date
+          trialEndDate = activeSub.trial_end_date
           status = activeSub.status
         } else {
           // Use base cost
@@ -154,6 +157,7 @@ export default async function DashboardPage() {
             toolCategory: tool.category,
             monthlyCost,
             renewalDate: renewalDate ? new Date(renewalDate) : null,
+            trialEndDate: trialEndDate ? new Date(trialEndDate) : null,
             projectCount: projects.length,
             projects,
             status

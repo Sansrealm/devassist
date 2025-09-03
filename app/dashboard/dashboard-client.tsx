@@ -14,6 +14,7 @@ interface ToolOverview {
   toolCategory: string | null
   monthlyCost: number
   renewalDate: Date | null
+  trialEndDate: Date | null
   projectCount: number
   projects: Array<{
     id: string
