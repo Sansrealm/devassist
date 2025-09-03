@@ -1,3 +1,4 @@
+// File: lib/tools/actions.ts
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
@@ -6,25 +7,22 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 
 const toolSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(1, "Tool name is required").max(100, "Tool name must be less than 100 characters"),
-  description: z.string().max(500, "Description must be less than 500 characters").optional(),
+  description: z.string().max(500, "Description must be less than 500 characters").nullable().optional(),
   category: z
     .enum(["development", "design", "productivity", "communication", "analytics", "marketing", "other"])
+    .nullable()
     .optional(),
-  websiteUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  logoUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  baseCost: z
-    .string()
-    .refine((val) => {
-      if (!val) return true
-      const num = Number.parseFloat(val)
-      return !Number.isNaN(num) && num >= 0
-    }, "Base cost must be a valid positive number")
-    .optional(),
-  // Add subscription fields - handle empty strings properly
-renewalDate: z.string().optional().transform(val => val === "" ? undefined : val),
-trialEndDate: z.string().optional().transform(val => val === "" ? undefined : val),
-billingCycle: z.enum(["monthly", "yearly", "quarterly", "one-time"]).optional().or(z.literal("")),
+  websiteUrl: z.string().url("Please enter a valid URL").nullable().optional(),
+  logoUrl: z.string().url("Please enter a valid URL").nullable().optional(),
+  baseCost: z.coerce.number().min(0, "Base cost must be a valid positive number").nullable().optional(),
+  renewalDate: z.string().nullable().optional(),
+  trialEndDate: z.string().nullable().optional(),
+  billingCycle: z.enum(["monthly", "yearly", "quarterly", "one-time"]).nullable().optional(),
+  // These fields are not used for the final object, but we include them for validation
+  emailIds: z.array(z.string()).optional(),
+  newEmails: z.array(z.string()).optional(),
 })
 
 export async function createTool(prevState: any, formData: FormData) {
@@ -38,42 +36,44 @@ export async function createTool(prevState: any, formData: FormData) {
       redirect("/sign-in")
     }
 
-    // Extract and validate form data (including subscription fields)
-    const rawData = {
-      name: formData.get("name") as string,
-      description: formData.get("description") as string,
-      category: formData.get("category") as string,
-      websiteUrl: formData.get("websiteUrl") as string,
-      logoUrl: formData.get("logoUrl") as string,
-      baseCost: formData.get("baseCost") as string,
-      // Extract subscription fields
-      renewalDate: formData.get("renewalDate") as string,
-      trialEndDate: formData.get("trialEndDate") as string,
-      billingCycle: formData.get("billingCycle") as string,
-    }
-
-    // Get selected email IDs and new emails
+    // Coerce form data into a plain object, handling arrays
+    const rawData = Object.fromEntries(formData.entries())
     const emailIds = formData.getAll("emailIds") as string[]
     const newEmails = formData.getAll("newEmails") as string[]
+    
+    // Combine raw data with array data
+    const dataToValidate = {
+      ...rawData,
+      emailIds,
+      newEmails,
+    }
 
+    // Explicitly convert empty strings to null for optional fields
+    const cleanedData = Object.fromEntries(
+      Object.entries(dataToValidate).map(([key, value]) => {
+        if (typeof value === 'string' && value.trim() === '') {
+          // Exclude 'name' from this conversion as it is required
+          return key === 'name' ? [key, value.trim()] : [key, null];
+        }
+        return [key, value];
+      })
+    );
+
+    console.log("🔧 Cleaned Data for Validation:", cleanedData)
     console.log("🔧 Email IDs:", emailIds)
     console.log("🔧 New emails:", newEmails)
-    console.log("📅 Subscription data:", {
-      renewalDate: rawData.renewalDate,
-      trialEndDate: rawData.trialEndDate,
-      billingCycle: rawData.billingCycle
-    })
-
+    
     // ENHANCED: Require at least one email (existing or new)
-    const toolId = formData.get("id") as string
+    const toolId = cleanedData.id as string
     if (!toolId && emailIds.length === 0 && newEmails.length === 0) {
       return {
         error: "Please select at least one email to associate with this tool.",
       }
     }
 
-    const result = toolSchema.safeParse(rawData)
+    const result = toolSchema.safeParse(cleanedData)
     if (!result.success) {
+      console.error("Zod validation error:", result.error.errors)
       return {
         error: result.error.errors[0].message,
       }
@@ -88,11 +88,11 @@ export async function createTool(prevState: any, formData: FormData) {
         .from('tools')
         .update({
           name: validatedData.name,
-          description: validatedData.description || null,
-          category: validatedData.category || null,
-          website_url: validatedData.websiteUrl || null,
-          logo_url: validatedData.logoUrl || null,
-          base_cost: validatedData.baseCost || null,
+          description: validatedData.description,
+          category: validatedData.category,
+          website_url: validatedData.websiteUrl,
+          logo_url: validatedData.logoUrl,
+          base_cost: validatedData.baseCost,
           updated_at: new Date().toISOString(),
         })
         .eq('id', toolId)
@@ -127,11 +127,11 @@ export async function createTool(prevState: any, formData: FormData) {
         .insert({
           user_id: user.id,
           name: validatedData.name,
-          description: validatedData.description || null,
-          category: validatedData.category || null,
-          website_url: validatedData.websiteUrl || null,
-          logo_url: validatedData.logoUrl || null,
-          base_cost: validatedData.baseCost || null,
+          description: validatedData.description,
+          category: validatedData.category,
+          website_url: validatedData.websiteUrl,
+          logo_url: validatedData.logoUrl,
+          base_cost: validatedData.baseCost,
         })
         .select()
         .single()
@@ -258,7 +258,7 @@ export async function createTool(prevState: any, formData: FormData) {
 
         // Create subscriptions for each tool account
         const subscriptionData = createdToolAccounts.map((toolAccount) => {
-          const subscriptionCost = validatedData.baseCost ? parseFloat(validatedData.baseCost) : 0
+          const subscriptionCost = validatedData.baseCost ? validatedData.baseCost : 0
 
           return {
             user_id: user.id,
