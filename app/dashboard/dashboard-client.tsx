@@ -116,7 +116,7 @@ export default function DashboardClient({
     <div className="min-h-screen bg-background">
       <DashboardHeader user={user} />
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto px-4 py-8 space-y-4">
         {/* Monthly Spend Overview - show filtered or total based on whether filters are active */}
         <MonthlySpendCard
   totalSpend={filters.search || filters.project !== "all" || filters.category !== "all" ? filteredTotals.totalSpend : totalSpend}
