@@ -116,7 +116,7 @@ export default async function EditToolPage({ params }: EditToolPageProps) {
   renewalDate: subscriptionData.renewalDate,
   trialEndDate: subscriptionData.trialEndDate,
   billingCycle: subscriptionData.billingCycle,
-  subscriptionStatus: subscriptionData.status, // Add this line
+  subscriptionStatus: subscriptionData.status, 
 }
 
     return (

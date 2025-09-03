@@ -66,9 +66,12 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
   const [state, formAction] = useActionState(createTool, null)
   const [newEmail, setNewEmail] = useState("")
   const [tempEmails, setTempEmails] = useState<string[]>([])
-  const [subscriptionType, setSubscriptionType] = useState<string>(
-    initialData?.subscriptionStatus || (initialData?.trialEndDate ? 'trial' : initialData?.renewalDate ? 'active' : '')
-  )
+  const [subscriptionType, setSubscriptionType] = useState<string>(() => {
+  if (initialData?.subscriptionStatus) return initialData.subscriptionStatus
+  if (initialData?.trialEndDate) return 'trial'
+  if (initialData?.renewalDate) return 'active'
+  return ''
+})
 
   useEffect(() => {
     if (state?.success) {
