@@ -35,6 +35,7 @@ interface ToolFormProps {
     renewalDate?: string | null
     trialEndDate?: string | null
     billingCycle?: string | null
+    subscriptionStatus?: string | null // Add subscription status
   }
   isEditing?: boolean
 }
@@ -65,6 +66,9 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
   const [state, formAction] = useActionState(createTool, null)
   const [newEmail, setNewEmail] = useState("")
   const [tempEmails, setTempEmails] = useState<string[]>([])
+  const [subscriptionType, setSubscriptionType] = useState<string>(
+    initialData?.subscriptionStatus || (initialData?.trialEndDate ? 'trial' : initialData?.renewalDate ? 'active' : '')
+  )
 
   useEffect(() => {
     if (state?.success) {
@@ -86,6 +90,11 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   }
+
+  // Determine what date fields to show
+  const showRenewalDate = subscriptionType === 'active' || (!isEditing && subscriptionType !== 'trial')
+  const showTrialEndDate = subscriptionType === 'trial' || (!isEditing && subscriptionType !== 'active')
+  const showSubscriptionTypeSelector = !isEditing // Only show for new tools
 
   return (
     <Card className="border-2 border-transparent bg-gradient-to-r from-[#002F71] to-[#0A4BA0] p-[2px]">
@@ -157,7 +166,29 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
               />
             </div>
 
-            
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="websiteUrl">Website URL</Label>
+                <Input
+                  id="websiteUrl"
+                  name="websiteUrl"
+                  type="url"
+                  placeholder="https://example.com"
+                  defaultValue={initialData?.websiteUrl || ""}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="logoUrl">Logo URL</Label>
+                <Input
+                  id="logoUrl"
+                  name="logoUrl"
+                  type="url"
+                  placeholder="https://example.com/logo.png"
+                  defaultValue={initialData?.logoUrl || ""}
+                />
+              </div>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="baseCost">Base Cost (USD)</Label>
@@ -175,52 +206,79 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
               </p>
             </div>
 
+            {/* Conditional Subscription Type Selector for New Tools */}
+            {showSubscriptionTypeSelector && (
+              <div className="space-y-2">
+                <Label htmlFor="subscriptionType">Subscription Type</Label>
+                <Select value={subscriptionType} onValueChange={setSubscriptionType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select subscription type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active Subscription</SelectItem>
+                    <SelectItem value="trial">Free Trial</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Choose whether this is an active paid subscription or free trial
+                </p>
+              </div>
+            )}
+
+            {/* Conditional Date Fields */}
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="renewalDate">Renewal Date</Label>
-                <Input
-                  id="renewalDate"
-                  name="renewalDate"
-                  type="date"
-                  placeholder="YYYY-MM-DD"
-                  defaultValue={initialData?.renewalDate || ""}
-                />
-                <p className="text-xs text-muted-foreground">
-                  When your subscription renews (optional)
-                </p>
-              </div>
+              {showRenewalDate && (
+                <div className="space-y-2">
+                  <Label htmlFor="renewalDate">Renewal Date</Label>
+                  <Input
+                    id="renewalDate"
+                    name="renewalDate"
+                    type="date"
+                    placeholder="YYYY-MM-DD"
+                    defaultValue={initialData?.renewalDate || ""}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    When your subscription renews
+                  </p>
+                </div>
+              )}
 
-              <div className="space-y-2">
-                <Label htmlFor="trialEndDate">Trial End Date</Label>
-                <Input
-                  id="trialEndDate"
-                  name="trialEndDate"
-                  type="date"
-                  placeholder="YYYY-MM-DD"
-                  defaultValue={initialData?.trialEndDate || ""}
-                />
-                <p className="text-xs text-muted-foreground">
-                  When your free trial expires (optional)
-                </p>
-              </div>
-            </div>
+              {showTrialEndDate && (
+                <div className="space-y-2">
+                  <Label htmlFor="trialEndDate">Trial End Date</Label>
+                  <Input
+                    id="trialEndDate"
+                    name="trialEndDate"
+                    type="date"
+                    placeholder="YYYY-MM-DD"
+                    defaultValue={initialData?.trialEndDate || ""}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    When your free trial expires
+                  </p>
+                </div>
+              )}
 
-            <div className="space-y-2">
-              <Label htmlFor="billingCycle">Billing Cycle</Label>
-              <Select name="billingCycle" defaultValue={initialData?.billingCycle || ""}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select billing cycle" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="one-time">One-time</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                How often you're billed for this tool
-              </p>
+              {/* Show billing cycle field if we have either date type */}
+              {(showRenewalDate || showTrialEndDate) && (
+                <div className="space-y-2">
+                  <Label htmlFor="billingCycle">Billing Cycle</Label>
+                  <Select name="billingCycle" defaultValue={initialData?.billingCycle || ""}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select billing cycle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                      <SelectItem value="quarterly">Quarterly</SelectItem>
+                      <SelectItem value="one-time">One-time</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    How often you're billed for this tool
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Enhanced Email Management */}

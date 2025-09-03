@@ -21,10 +21,10 @@ const toolSchema = z.object({
       return !Number.isNaN(num) && num >= 0
     }, "Base cost must be a valid positive number")
     .optional(),
-  // Add subscription fields
-  renewalDate: z.string().optional(),
-  trialEndDate: z.string().optional(),
-  billingCycle: z.enum(["monthly", "yearly", "quarterly", "one-time"]).optional(),
+  // Add subscription fields - handle empty strings properly
+renewalDate: z.string().optional().transform(val => val === "" ? undefined : val),
+trialEndDate: z.string().optional().transform(val => val === "" ? undefined : val),
+billingCycle: z.enum(["monthly", "yearly", "quarterly", "one-time"]).optional().or(z.literal("")),
 })
 
 export async function createTool(prevState: any, formData: FormData) {

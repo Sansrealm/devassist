@@ -105,20 +105,19 @@ export default async function EditToolPage({ params }: EditToolPageProps) {
 
     console.log("📅 Extracted subscription data:", subscriptionData)
 
-    // Transform tool data to match expected format (now includes subscription fields)
-    const initialData = {
-      id: tool.id,
-      name: tool.name,
-      description: tool.description,
-      category: tool.category,
-      logoUrl: tool.logo_url,
-      websiteUrl: tool.website_url,
-      baseCost: tool.base_cost,
-      // Add subscription fields
-      renewalDate: subscriptionData.renewalDate,
-      trialEndDate: subscriptionData.trialEndDate,
-      billingCycle: subscriptionData.billingCycle,
-    }
+  const initialData = {
+  id: tool.id,
+  name: tool.name,
+  description: tool.description,
+  category: tool.category,
+  logoUrl: tool.logo_url,
+  websiteUrl: tool.website_url,
+  baseCost: tool.base_cost,
+  renewalDate: subscriptionData.renewalDate,
+  trialEndDate: subscriptionData.trialEndDate,
+  billingCycle: subscriptionData.billingCycle,
+  subscriptionStatus: subscriptionData.status, // Add this line
+}
 
     return (
       <div className="min-h-screen bg-background">
