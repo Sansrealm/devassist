@@ -1,3 +1,4 @@
+// File: lib/notifications/triggers.ts
 import { 
   getUpcomingTrialExpirations, 
   getUpcomingRenewals, 
@@ -144,7 +145,7 @@ async function sendPendingNotifications(): Promise<BulkNotificationResult> {
     processed++
     
     try {
-      // Get user's primary email
+      // Get user's primary email first
       const userEmail = await getUserPrimaryEmail(notification.userId)
       
       if (!userEmail) {
@@ -154,14 +155,13 @@ async function sendPendingNotifications(): Promise<BulkNotificationResult> {
       
       // Get subscription data from the related_id
       if (notification.relatedId && (notification.type === 'trial_expiring' || notification.type === 'renewal_reminder')) {
-        // Get subscription details for email
+        // REFACTORED: Use a single, reliable query
         const supabase = createClient()
         const { data: subscription, error: subError } = await supabase
           .from('subscriptions')
           .select(`
             id,
             user_id,
-            tool_account_id,
             name,
             cost,
             currency,
@@ -172,9 +172,6 @@ async function sendPendingNotifications(): Promise<BulkNotificationResult> {
             tool_accounts!inner (
               tools!inner (
                 name
-              ),
-              emails!inner (
-                email
               )
             )
           `)
@@ -186,11 +183,11 @@ async function sendPendingNotifications(): Promise<BulkNotificationResult> {
           continue
         }
 
-        // Transform subscription data
+        // Transform subscription data from the simplified query
         const subscriptionData: SubscriptionForNotification = {
           id: subscription.id,
           userId: subscription.user_id,
-          toolAccountId: subscription.tool_account_id,
+          toolAccountId: null, // Not needed for email sending
           name: subscription.name,
           cost: Number(subscription.cost),
           currency: subscription.currency,
@@ -199,7 +196,7 @@ async function sendPendingNotifications(): Promise<BulkNotificationResult> {
           trialEndDate: subscription.trial_end_date ? new Date(subscription.trial_end_date) : null,
           renewalDate: subscription.renewal_date ? new Date(subscription.renewal_date) : null,
           toolName: subscription.tool_accounts.tools.name,
-          userEmail: subscription.tool_accounts.emails.email
+          userEmail: userEmail // Use the primary email fetched earlier
         }
 
         // Calculate days until event
