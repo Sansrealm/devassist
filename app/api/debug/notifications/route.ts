@@ -1,20 +1,66 @@
 import { NextResponse } from "next/server"
-import { detectAndCreateNotifications } from "@/lib/notifications/triggers"
+import { 
+  getUpcomingRenewals, 
+  getPendingNotifications, 
+  createNotification,
+  getUserPrimaryEmail
+} from "@/lib/notifications/database"
+import { sendNotificationEmail } from "@/lib/notifications/resend"
+import { getNotificationContent } from "@/lib/notifications/templates"
 
 export async function GET() {
-  console.log("🔍 Starting notification debug...")
+  console.log("🔍 Starting detailed notification debug...")
   
   try {
-    // Run the actual notification detection process
-    const result = await detectAndCreateNotifications()
+    // Step 1: Check upcoming renewals
+    const renewals = await getUpcomingRenewals(1)
+    console.log("📅 Found renewals:", renewals.length)
     
-    console.log("🔍 Notification detection result:", JSON.stringify(result, null, 2))
+    if (renewals.length === 0) {
+      return NextResponse.json({ message: "No renewals found for tomorrow" })
+    }
+    
+    const subscription = renewals[0]
+    console.log("🔍 Processing subscription:", subscription)
+    
+    // Step 2: Create notification
+    const { title, message } = getNotificationContent(
+      'renewal_reminder', 
+      subscription.toolName, 
+      subscription.renewalDate?.toLocaleDateString() || 'Unknown',
+      1
+    )
+    
+    console.log("📝 Notification content:", { title, message })
+    
+    // Step 3: Get user email
+    const userEmail = await getUserPrimaryEmail(subscription.userId)
+    console.log("📧 User email:", userEmail)
+    
+    if (!userEmail) {
+      return NextResponse.json({ error: "No user email found" })
+    }
+    
+    // Step 4: Try sending email directly
+    console.log("🚀 Attempting to send email...")
+    const emailResult = await sendNotificationEmail(
+      subscription,
+      'renewal_reminder',
+      userEmail,
+      1
+    )
+    
+    console.log("📧 Email result:", emailResult)
     
     return NextResponse.json({
       success: true,
-      timestamp: new Date().toISOString(),
-      result: result,
-      message: "Check server logs for detailed output"
+      subscription: {
+        toolName: subscription.toolName,
+        renewalDate: subscription.renewalDate,
+        cost: subscription.cost
+      },
+      emailResult,
+      userEmail
     })
     
   } catch (error) {
