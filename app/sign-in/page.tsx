@@ -47,7 +47,7 @@ export default async function SignInPage() {
                   </svg>
                 </div>
               </div>
-              <span className="text-sm font-medium">Get renewal reminders</span>
+              <span className="text-sm font-medium">Get timely renewal reminders</span>
             </div>
 
             <div className="flex items-center space-x-3 bg-background/50 backdrop-blur-sm border rounded-lg px-4 py-3">
@@ -58,7 +58,7 @@ export default async function SignInPage() {
                   </svg>
                 </div>
               </div>
-              <span className="text-sm font-medium">Visualize spending</span>
+              <span className="text-sm font-medium">Visualize spending across tools and projects</span>
             </div>
           </div>
         </div>
