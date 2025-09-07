@@ -53,7 +53,12 @@ export function Combobox({
   isLoading = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
-  const [searchValue, setSearchValue] = React.useState("")
+  const [searchValue, setSearchValue] = React.useState(value || "")
+
+  // Sync search value with the external value
+  React.useEffect(() => {
+    setSearchValue(value || "")
+  }, [value])
 
   const selectedOption = options.find((option) => option.value === value)
 
