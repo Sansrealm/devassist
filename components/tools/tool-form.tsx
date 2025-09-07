@@ -93,7 +93,6 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
   const [logoUrl, setLogoUrl] = useState(initialData?.logoUrl || "")
   const [baseCost, setBaseCost] = useState(initialData?.baseCost || "")
   const [billingCycle, setBillingCycle] = useState(initialData?.billingCycle || "")
-  const [selectedTemplate, setSelectedTemplate] = useState<ToolTemplate | null>(null)
 
   useEffect(() => {
     if (state?.success) {
@@ -117,10 +116,8 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
   }
 
   const handleTemplateSelect = (template: ToolTemplate | null) => {
-    setSelectedTemplate(template)
-    
     if (template && !isEditing) {
-      // Auto-populate fields from template (only for new tools)
+      // Silently auto-populate fields from template (only for new tools)
       if (template.category) setCategory(template.category)
       if (template.description) setDescription(template.description)
       if (template.website_url) setWebsiteUrl(template.website_url)
@@ -132,11 +129,6 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
 
   const handleToolNameChange = (value: string) => {
     setToolName(value)
-    
-    // If user manually changes the name and it doesn't match the template, clear template
-    if (selectedTemplate && value !== selectedTemplate.name) {
-      setSelectedTemplate(null)
-    }
   }
 
   // Determine what date fields to show
@@ -172,39 +164,8 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
               </div>
             )}
 
-            {/* Show template selection indicator */}
-            {selectedTemplate && !isEditing && (
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-blue-900">Template Selected</p>
-                    <p className="text-xs text-blue-700">
-                      Using "{selectedTemplate.name}" template. Fields have been auto-populated.
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedTemplate(null)
-                      // Reset auto-populated fields
-                      setCategory("")
-                      setDescription("")
-                      setWebsiteUrl("")
-                      setLogoUrl("")
-                      setBaseCost("")
-                      setBillingCycle("")
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
             <div className="grid gap-6 md:grid-cols-2">
-              {/* Tool Name with Search */}
+              {/* Clean Tool Name Input */}
               <div className="space-y-2">
                 <ToolSearchInput
                   value={toolName}
@@ -212,9 +173,8 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                   onTemplateSelect={handleTemplateSelect}
                   required
                   label="Tool Name"
-                  placeholder="Search for a tool or enter custom name..."
-                  description="Start typing to search from popular tools or enter a custom name"
-                  disabled={isEditing} // Disable search when editing existing tools
+                  placeholder="e.g., Figma, Linear, Vercel"
+                  disabled={isEditing}
                 />
                 {/* Hidden input for form submission */}
                 <input type="hidden" name="name" value={toolName} />
@@ -369,7 +329,7 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
               )}
             </div>
 
-            {/* Enhanced Email Management */}
+            {/* Email Management */}
             <div className="space-y-4">
               <Label>Email Accounts *</Label>
               
