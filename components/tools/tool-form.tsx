@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, ArrowLeft, Plus, X } from "lucide-react"
 import { createTool } from "@/lib/tools/actions"
+import { ToolSearchInput } from "@/components/tools/tool-search-input"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
@@ -20,6 +21,17 @@ interface UserEmail {
   email: string
   isPrimary: boolean
   isAssociated?: boolean
+}
+
+interface ToolTemplate {
+  id: string
+  name: string
+  description: string | null
+  category: string | null
+  logo_url: string | null
+  website_url: string | null
+  typical_cost: number | null
+  billing_cycle: string | null
 }
 
 interface ToolFormProps {
@@ -35,7 +47,7 @@ interface ToolFormProps {
     renewalDate?: string | null
     trialEndDate?: string | null
     billingCycle?: string | null
-    subscriptionStatus?: string | null // Add subscription status
+    subscriptionStatus?: string | null
   }
   isEditing?: boolean
 }
@@ -67,11 +79,21 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
   const [newEmail, setNewEmail] = useState("")
   const [tempEmails, setTempEmails] = useState<string[]>([])
   const [subscriptionType, setSubscriptionType] = useState<string>(() => {
-  if (initialData?.subscriptionStatus) return initialData.subscriptionStatus
-  if (initialData?.trialEndDate) return 'trial'
-  if (initialData?.renewalDate) return 'active'
-  return ''
-})
+    if (initialData?.subscriptionStatus) return initialData.subscriptionStatus
+    if (initialData?.trialEndDate) return 'trial'
+    if (initialData?.renewalDate) return 'active'
+    return ''
+  })
+
+  // Form field states for template auto-population
+  const [toolName, setToolName] = useState(initialData?.name || "")
+  const [category, setCategory] = useState(initialData?.category || "")
+  const [description, setDescription] = useState(initialData?.description || "")
+  const [websiteUrl, setWebsiteUrl] = useState(initialData?.websiteUrl || "")
+  const [logoUrl, setLogoUrl] = useState(initialData?.logoUrl || "")
+  const [baseCost, setBaseCost] = useState(initialData?.baseCost || "")
+  const [billingCycle, setBillingCycle] = useState(initialData?.billingCycle || "")
+  const [selectedTemplate, setSelectedTemplate] = useState<ToolTemplate | null>(null)
 
   useEffect(() => {
     if (state?.success) {
@@ -92,6 +114,29 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
 
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
+
+  const handleTemplateSelect = (template: ToolTemplate | null) => {
+    setSelectedTemplate(template)
+    
+    if (template && !isEditing) {
+      // Auto-populate fields from template (only for new tools)
+      if (template.category) setCategory(template.category)
+      if (template.description) setDescription(template.description)
+      if (template.website_url) setWebsiteUrl(template.website_url)
+      if (template.logo_url) setLogoUrl(template.logo_url)
+      if (template.typical_cost) setBaseCost(template.typical_cost.toString())
+      if (template.billing_cycle) setBillingCycle(template.billing_cycle)
+    }
+  }
+
+  const handleToolNameChange = (value: string) => {
+    setToolName(value)
+    
+    // If user manually changes the name and it doesn't match the template, clear template
+    if (selectedTemplate && value !== selectedTemplate.name) {
+      setSelectedTemplate(null)
+    }
   }
 
   // Determine what date fields to show
@@ -127,21 +172,57 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
               </div>
             )}
 
+            {/* Show template selection indicator */}
+            {selectedTemplate && !isEditing && (
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">Template Selected</p>
+                    <p className="text-xs text-blue-700">
+                      Using "{selectedTemplate.name}" template. Fields have been auto-populated.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedTemplate(null)
+                      // Reset auto-populated fields
+                      setCategory("")
+                      setDescription("")
+                      setWebsiteUrl("")
+                      setLogoUrl("")
+                      setBaseCost("")
+                      setBillingCycle("")
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="grid gap-6 md:grid-cols-2">
+              {/* Tool Name with Search */}
               <div className="space-y-2">
-                <Label htmlFor="name">Tool Name *</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="e.g., Figma, Linear, Vercel"
+                <ToolSearchInput
+                  value={toolName}
+                  onChange={handleToolNameChange}
+                  onTemplateSelect={handleTemplateSelect}
                   required
-                  defaultValue={initialData?.name}
+                  label="Tool Name"
+                  placeholder="Search for a tool or enter custom name..."
+                  description="Start typing to search from popular tools or enter a custom name"
+                  disabled={isEditing} // Disable search when editing existing tools
                 />
+                {/* Hidden input for form submission */}
+                <input type="hidden" name="name" value={toolName} />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select name="category" defaultValue={initialData?.category || ""}>
+                <Select name="category" value={category} onValueChange={setCategory}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -165,7 +246,8 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                 name="description"
                 placeholder="Brief description of what this tool is used for"
                 rows={3}
-                defaultValue={initialData?.description || ""}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
               />
             </div>
 
@@ -177,7 +259,8 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                   name="websiteUrl"
                   type="url"
                   placeholder="https://example.com"
-                  defaultValue={initialData?.websiteUrl || ""}
+                  value={websiteUrl}
+                  onChange={(e) => setWebsiteUrl(e.target.value)}
                 />
               </div>
 
@@ -188,7 +271,8 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                   name="logoUrl"
                   type="url"
                   placeholder="https://example.com/logo.png"
-                  defaultValue={initialData?.logoUrl || ""}
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
                 />
               </div>
             </div>
@@ -202,7 +286,8 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                 step="0.01"
                 min="0"
                 placeholder="0.00"
-                defaultValue={initialData?.baseCost || ""}
+                value={baseCost}
+                onChange={(e) => setBaseCost(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
                 Monthly cost for this tool (can be overridden per subscription)
@@ -266,7 +351,7 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
               {(showRenewalDate || showTrialEndDate) && (
                 <div className="space-y-2">
                   <Label htmlFor="billingCycle">Billing Cycle</Label>
-                  <Select name="billingCycle" defaultValue={initialData?.billingCycle || ""}>
+                  <Select name="billingCycle" value={billingCycle} onValueChange={setBillingCycle}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select billing cycle" />
                     </SelectTrigger>
