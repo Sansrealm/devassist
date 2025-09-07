@@ -153,7 +153,7 @@ export function ToolSearchInput({
           onValueChange={handleValueChange}
           onSelect={handleTemplateSelect}
           placeholder={placeholder}
-          emptyText="No tools found. Try a different search term."
+          emptyText="Tool ."
           searchPlaceholder="Search for tools..."
           allowCustomValue={true}
           isLoading={isLoading}

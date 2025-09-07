@@ -283,10 +283,11 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                     name="renewalDate"
                     type="date"
                     placeholder="YYYY-MM-DD"
+                    min={new Date().toISOString().split('T')[0]} // Prevent past dates
                     defaultValue={initialData?.renewalDate || ""}
                   />
                   <p className="text-xs text-muted-foreground">
-                    When your subscription renews
+                    When your subscription renews (must be a future date)
                   </p>
                 </div>
               )}
@@ -299,10 +300,11 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                     name="trialEndDate"
                     type="date"
                     placeholder="YYYY-MM-DD"
+                    min={new Date().toISOString().split('T')[0]} // Prevent past dates
                     defaultValue={initialData?.trialEndDate || ""}
                   />
                   <p className="text-xs text-muted-foreground">
-                    When your free trial expires
+                    When your free trial expires (must be a future date)
                   </p>
                 </div>
               )}

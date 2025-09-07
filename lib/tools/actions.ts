@@ -17,8 +17,21 @@ const toolSchema = z.object({
   websiteUrl: z.string().url("Please enter a valid URL").nullable().optional(),
   logoUrl: z.string().url("Please enter a valid URL").nullable().optional(),
   baseCost: z.coerce.number().min(0, "Base cost must be a valid positive number").nullable().optional(),
-  renewalDate: z.string().nullable().optional(),
-  trialEndDate: z.string().nullable().optional(),
+  renewalDate: z.string().nullable().optional().refine((date) => {
+  if (!date) return true; // Allow null/empty dates
+  const renewalDate = new Date(date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to start of day
+  return renewalDate >= today;
+}, "Renewal date must be today or in the future"),
+
+trialEndDate: z.string().nullable().optional().refine((date) => {
+  if (!date) return true; // Allow null/empty dates  
+  const trialDate = new Date(date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to start of day
+  return trialDate >= today;
+}, "Trial end date must be today or in the future"),
   billingCycle: z.enum(["monthly", "yearly", "quarterly", "one-time"]).nullable().optional(),
   // These fields are not used for the final object, but we include them for validation
   emailIds: z.array(z.string()).optional(),
