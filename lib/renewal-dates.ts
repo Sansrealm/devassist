@@ -9,7 +9,7 @@ export function calculateNextRenewalDate(
   billingCycle: BillingCycle
 ): Date | null {
   if (billingCycle === 'one-time') {
-    return null // One-time payments don't renew
+    return null
   }
 
   const lastDate = new Date(lastRenewalDate)
@@ -80,7 +80,7 @@ export function getRenewalDescription(
     month: 'short',
     day: 'numeric',
     year: 'numeric'
-  }).format(nextDate)
+  }).format(nextDateUTC)
 
   if (daysDiff < 0) {
     return `${dateString} (overdue)`
@@ -108,7 +108,8 @@ export function isRenewalUpcoming(
   if (!nextDate) return false
   
   const today = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()))
-  const daysDiff = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  const nextDateUTC = new Date(Date.UTC(nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate()));
+  const daysDiff = Math.ceil((nextDateUTC.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
   
   return daysDiff >= 0 && daysDiff <= daysThreshold
 }
