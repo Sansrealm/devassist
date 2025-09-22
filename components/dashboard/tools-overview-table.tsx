@@ -1,4 +1,4 @@
-// Updated and corrected component code
+// Corrected component code
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,8 +15,8 @@ interface ToolOverview {
   toolCategory: string | null
   emailAddress: string
   monthlyCost: number
-  renewalDate: Date | null
-  trialEndDate: Date | null
+  renewalDate: string | null // CHANGE: Updated interface to match server's output
+  trialEndDate: string | null // CHANGE: Updated interface to match server's output
   projectCount: number
   projects: Array<{
     id: string
@@ -69,11 +69,11 @@ export default function ToolsOverviewTable({ data }: ToolsOverviewTableProps) {
     return `$${cost.toFixed(2)}`
   }
 
-  // CORRECTED: This function now formats the date using the UTC values.
-  const formatDate = (date: Date | null) => {
+  // CORRECTED: The formatDate function now correctly handles string input
+  const formatDate = (date: string | null) => {
     if (!date) return "-"
-    // Create a new Date object using the UTC values to avoid timezone offset
-    const utcDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    const d = new Date(date);
+    const utcDate = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
     return new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
@@ -161,7 +161,8 @@ export default function ToolsOverviewTable({ data }: ToolsOverviewTableProps) {
                         ? formatDate(tool.trialEndDate)
                         : (tool.renewalDate && tool.billingCycle
                           ? (() => {
-                            // To fix this, you'll need to modify the getRenewalDescription function as well.
+                            // You will need to make sure `getRenewalDescription` is also updated
+                            // to handle string input and use a similar date formatting logic.
                             return getRenewalDescription(tool.renewalDate, tool.billingCycle as any);
                           })()
                           : formatDate(tool.renewalDate)
