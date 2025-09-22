@@ -1,4 +1,5 @@
 // lib/renewal-dates.ts
+
 export type BillingCycle = 'monthly' | 'yearly' | 'quarterly' | 'one-time'
 
 /**
@@ -14,7 +15,20 @@ export function calculateNextRenewalDate(
     return null
   }
 
-  const storedDate = new Date(renewalDate)
+  // Parse the stored date - handle both string and Date inputs
+  let storedDate: Date
+  if (typeof renewalDate === 'string') {
+    // For date strings like "2025-09-30", ensure they're parsed as local dates
+    if (renewalDate.includes('T')) {
+      storedDate = new Date(renewalDate)
+    } else {
+      // For YYYY-MM-DD format, parse as local date to avoid timezone shifts
+      const [year, month, day] = renewalDate.split('-').map(Number)
+      storedDate = new Date(year, month - 1, day) // month is 0-indexed
+    }
+  } else {
+    storedDate = new Date(renewalDate)
+  }
   
   if (isNaN(storedDate.getTime())) {
     return null
@@ -81,6 +95,7 @@ export function getRenewalDescription(
     return 'Unable to calculate renewal date'
   }
   
+  // Use consistent local time for date comparison
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   
@@ -120,6 +135,7 @@ export function isRenewalUpcoming(
   
   if (!nextDate) return false
   
+  // Use consistent local time for date comparison
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   
