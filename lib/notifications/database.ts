@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { calculateNextRenewalDate } from "@/lib/renewal-dates"
 import { NotificationType, NotificationData, SubscriptionForNotification, NotificationResult } from "./types"
 
 /**
@@ -68,6 +69,25 @@ export async function getUpcomingTrialExpirations(daysAhead: number): Promise<Su
 export async function getUpcomingRenewals(daysAhead: number): Promise<SubscriptionForNotification[]> {
   const supabase = createClient()
   
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select(`
+      id, user_id, tool_account_id, name, cost, currency, billing_cycle, status,
+      trial_end_date, renewal_date,
+      tool_accounts!inner (
+        tools!inner (name),
+        emails!inner (email)
+      )
+    `)
+    .eq('status', 'active')
+    .not('renewal_date', 'is', null)
+    .not('billing_cycle', 'eq', 'one-time')
+  
+  if (error) {
+    console.error('Error fetching subscriptions:', error)
+    return []
+  }
+  
   const targetDate = new Date()
   targetDate.setDate(targetDate.getDate() + daysAhead)
   targetDate.setHours(0, 0, 0, 0)
@@ -75,52 +95,26 @@ export async function getUpcomingRenewals(daysAhead: number): Promise<Subscripti
   const nextDay = new Date(targetDate)
   nextDay.setDate(nextDay.getDate() + 1)
   
-  const { data, error } = await supabase
-    .from('subscriptions')
-    .select(`
-      id,
-      user_id,
-      tool_account_id,
-      name,
-      cost,
-      currency,
-      billing_cycle,
-      status,
-      trial_end_date,
-      renewal_date,
-      tool_accounts!inner (
-        tools!inner (
-          name
-        ),
-        emails!inner (
-          email
-        )
-      )
-    `)
-    .eq('status', 'active')
-    .not('renewal_date', 'is', null)
-    .gte('renewal_date', targetDate.toISOString())
-    .lt('renewal_date', nextDay.toISOString())
-  
-  if (error) {
-    console.error('Error fetching upcoming renewals:', error)
-    return []
-  }
-  
-  return data.map(sub => ({
-    id: sub.id,
-    userId: sub.user_id,
-    toolAccountId: sub.tool_account_id,
-    name: sub.name,
-    cost: Number(sub.cost),
-    currency: sub.currency,
-    billingCycle: sub.billing_cycle as 'monthly' | 'yearly' | 'one-time' | 'usage-based',
-    status: sub.status as 'active' | 'trial' | 'cancelled' | 'expired',
-    trialEndDate: sub.trial_end_date ? new Date(sub.trial_end_date) : null,
-    renewalDate: sub.renewal_date ? new Date(sub.renewal_date) : null,
-    toolName: sub.tool_accounts.tools.name,
-    userEmail: sub.tool_accounts.emails.email
-  }))
+  return data
+    .map(sub => ({
+      id: sub.id,
+      userId: sub.user_id,
+      toolAccountId: sub.tool_account_id,
+      name: sub.name,
+      cost: Number(sub.cost),
+      currency: sub.currency,
+      billingCycle: sub.billing_cycle as 'monthly' | 'yearly' | 'one-time' | 'usage-based',
+      status: sub.status as 'active' | 'trial' | 'cancelled' | 'expired',
+      trialEndDate: sub.trial_end_date ? new Date(sub.trial_end_date) : null,
+      renewalDate: calculateNextRenewalDate(sub.renewal_date!, sub.billing_cycle as any),
+      toolName: sub.tool_accounts.tools.name,
+      userEmail: sub.tool_accounts.emails.email
+    }))
+    .filter(sub => {
+      if (!sub.renewalDate) return false
+      const renewalTime = sub.renewalDate.getTime()
+      return renewalTime >= targetDate.getTime() && renewalTime < nextDay.getTime()
+    })
 }
 
 /**

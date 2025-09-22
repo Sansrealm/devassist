@@ -6,6 +6,7 @@ import { MoreHorizontal, ExternalLink, FolderOpen, Lightbulb } from "lucide-reac
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
+import { calculateNextRenewalDate, getRenewalDescription } from "@/lib/renewal-dates"
 
 interface ToolOverview {
   toolId: string
@@ -152,8 +153,14 @@ export default function ToolsOverviewTable({ data }: ToolsOverviewTableProps) {
                       )}
                     </TableCell>
                     <TableCell>
-                      {tool.status === 'trial' ? formatDate(tool.trialEndDate) : formatDate(tool.renewalDate)}
-                    </TableCell>
+  {tool.status === 'trial' 
+    ? formatDate(tool.trialEndDate) 
+    : (tool.renewalDate && tool.billingCycle 
+        ? getRenewalDescription(tool.renewalDate, tool.billingCycle as any) 
+        : formatDate(tool.renewalDate)
+      )
+  }
+</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{tool.projectCount}</span>
