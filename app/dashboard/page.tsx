@@ -98,7 +98,7 @@ export default async function DashboardPage() {
       })
     }
 
-    console.log("Raw tools data:", toolsOverviewData.slice(0, 2)); // Check first 2 tools
+  
 
     // Process tools overview data
     const toolsOverviewData = []
