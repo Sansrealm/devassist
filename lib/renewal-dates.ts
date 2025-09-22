@@ -1,5 +1,4 @@
 // lib/renewal-dates.ts
-
 export type BillingCycle = 'monthly' | 'yearly' | 'quarterly' | 'one-time'
 
 /**
@@ -13,19 +12,15 @@ export function calculateNextRenewalDate(
     return null // One-time payments don't renew
   }
 
-  // Use a UTC-safe date object for calculations
   const lastDate = new Date(lastRenewalDate)
   const today = new Date()
   
-  // If last renewal date is invalid, return null
   if (isNaN(lastDate.getTime())) {
     return null
   }
 
   let nextDate = new Date(lastDate)
 
-  // Keep adding billing periods until we get a future date
-  // All comparisons are now UTC-safe
   while (nextDate <= today) {
     switch (billingCycle) {
       case 'monthly':
@@ -52,10 +47,8 @@ function addMonthsUTC(date: Date, months: number): Date {
   
   result.setUTCMonth(result.getUTCMonth() + months)
   
-  // Handle edge case: if original date was end of month (e.g., Jan 31)
-  // and target month has fewer days (e.g., Feb), set to last day of target month
   if (result.getUTCDate() !== originalDay) {
-    result.setUTCDate(0) // Set to last day of previous month (which is target month)
+    result.setUTCDate(0)
   }
   
   return result
@@ -78,11 +71,11 @@ export function getRenewalDescription(
     return 'Unable to calculate renewal date'
   }
   
-  // Create UTC-safe date for today for comparison
   const today = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()))
-  const daysDiff = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  const nextDateUTC = new Date(Date.UTC(nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate()));
   
-  // Format the date for display using UTC methods
+  const daysDiff = Math.ceil((nextDateUTC.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  
   const dateString = new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
