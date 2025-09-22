@@ -23,7 +23,7 @@ const TRIAL_NOTIFICATION_SCHEDULE = [
 ]
 
 const RENEWAL_NOTIFICATION_SCHEDULE = [
-  { daysAhead: 30 },
+  { daysAhead: 15 },
   { daysAhead: 7 },
   { daysAhead: 1 },
   { daysAhead: 0 }, // renewal day
