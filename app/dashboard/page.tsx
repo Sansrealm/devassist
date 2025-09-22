@@ -165,7 +165,7 @@ export default async function DashboardPage() {
             trialEndDate: trialEndDate ? new Date(trialEndDate) : null,
             projectCount: projects.length,
             projects,
-            status
+            status,
             billingCycle 
           })
         }
