@@ -1,5 +1,6 @@
 // lib/renewal-dates.ts
-
+// FIXED: Timezone issue causing dates to shift by 1 day
+// Now handles date parsing consistently in local timezone
 export type BillingCycle = 'monthly' | 'yearly' | 'quarterly' | 'one-time'
 
 /**
