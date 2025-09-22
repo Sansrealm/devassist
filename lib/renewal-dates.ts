@@ -13,6 +13,7 @@ export function calculateNextRenewalDate(
     return null // One-time payments don't renew
   }
 
+  // Use a UTC-safe date object for calculations
   const lastDate = new Date(lastRenewalDate)
   const today = new Date()
   
@@ -24,16 +25,17 @@ export function calculateNextRenewalDate(
   let nextDate = new Date(lastDate)
 
   // Keep adding billing periods until we get a future date
+  // All comparisons are now UTC-safe
   while (nextDate <= today) {
     switch (billingCycle) {
       case 'monthly':
-        nextDate = addMonths(nextDate, 1)
+        nextDate = addMonthsUTC(nextDate, 1)
         break
       case 'quarterly':  
-        nextDate = addMonths(nextDate, 3)
+        nextDate = addMonthsUTC(nextDate, 3)
         break
       case 'yearly':
-        nextDate = addMonths(nextDate, 12)
+        nextDate = addMonthsUTC(nextDate, 12)
         break
     }
   }
@@ -42,18 +44,18 @@ export function calculateNextRenewalDate(
 }
 
 /**
- * Adds months to a date, handling edge cases like month-end dates
+ * Adds months to a date, handling edge cases like month-end dates, using UTC methods
  */
-function addMonths(date: Date, months: number): Date {
+function addMonthsUTC(date: Date, months: number): Date {
   const result = new Date(date)
-  const originalDay = result.getDate()
+  const originalDay = result.getUTCDate()
   
-  result.setMonth(result.getMonth() + months)
+  result.setUTCMonth(result.getUTCMonth() + months)
   
   // Handle edge case: if original date was end of month (e.g., Jan 31)
   // and target month has fewer days (e.g., Feb), set to last day of target month
-  if (result.getDate() !== originalDay) {
-    result.setDate(0) // Set to last day of previous month (which is target month)
+  if (result.getUTCDate() !== originalDay) {
+    result.setUTCDate(0) // Set to last day of previous month (which is target month)
   }
   
   return result
@@ -75,15 +77,17 @@ export function getRenewalDescription(
   if (!nextDate) {
     return 'Unable to calculate renewal date'
   }
-
-  const today = new Date()
+  
+  // Create UTC-safe date for today for comparison
+  const today = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()))
   const daysDiff = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
   
-  const dateString = nextDate.toLocaleDateString('en-US', {
+  // Format the date for display using UTC methods
+  const dateString = new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
-  })
+  }).format(nextDate)
 
   if (daysDiff < 0) {
     return `${dateString} (overdue)`
@@ -110,7 +114,7 @@ export function isRenewalUpcoming(
   
   if (!nextDate) return false
   
-  const today = new Date()
+  const today = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()))
   const daysDiff = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
   
   return daysDiff >= 0 && daysDiff <= daysThreshold
