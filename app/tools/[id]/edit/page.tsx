@@ -12,6 +12,28 @@ interface EditToolPageProps {
   }
 }
 
+/**
+ * Converts a timestamp to YYYY-MM-DD format for HTML date inputs
+ */
+function formatDateForInput(timestamp: string | null): string | null {
+  if (!timestamp) return null
+  
+  try {
+    const date = new Date(timestamp)
+    if (isNaN(date.getTime())) return null
+    
+    // Format as YYYY-MM-DD for HTML date input
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    
+    return `${year}-${month}-${day}`
+  } catch (error) {
+    console.error('Error formatting date:', error)
+    return null
+  }
+}
+
 export default async function EditToolPage({ params }: EditToolPageProps) {
   const supabase = createClient()
   const {
@@ -87,9 +109,9 @@ export default async function EditToolPage({ params }: EditToolPageProps) {
     // Extract subscription data (use the first subscription if multiple exist)
     const firstSubscription = toolAccounts?.[0]?.subscriptions?.[0]
     const subscriptionData = firstSubscription ? {
-      // FIX: Pass the full, timezone-aware ISO string to the form
-      renewalDate: firstSubscription.renewal_date,
-      trialEndDate: firstSubscription.trial_end_date,
+      // FIX: Format dates properly for HTML date inputs (YYYY-MM-DD format)
+      renewalDate: formatDateForInput(firstSubscription.renewal_date),
+      trialEndDate: formatDateForInput(firstSubscription.trial_end_date),
       billingCycle: firstSubscription.billing_cycle || null,
       cost: firstSubscription.cost?.toString() || null,
       status: firstSubscription.status || null
@@ -116,6 +138,8 @@ export default async function EditToolPage({ params }: EditToolPageProps) {
       billingCycle: subscriptionData.billingCycle,
       subscriptionStatus: subscriptionData.status, 
     }
+
+    console.log("📝 Final initial data for form (with properly formatted dates):", initialData)
 
     return (
       <div className="min-h-screen bg-background">
