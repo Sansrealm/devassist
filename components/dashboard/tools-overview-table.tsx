@@ -156,7 +156,12 @@ export default function ToolsOverviewTable({ data }: ToolsOverviewTableProps) {
   {tool.status === 'trial' 
     ? formatDate(tool.trialEndDate) 
     : (tool.renewalDate && tool.billingCycle 
-        ? getRenewalDescription(tool.renewalDate, tool.billingCycle as any) 
+        ? (() => {
+            console.log('Calculating for:', tool.toolName, 'Original date:', tool.renewalDate, 'Cycle:', tool.billingCycle);
+            const calculated = calculateNextRenewalDate(tool.renewalDate, tool.billingCycle as any);
+            console.log('Calculated:', calculated);
+            return getRenewalDescription(tool.renewalDate, tool.billingCycle as any);
+          })()
         : formatDate(tool.renewalDate)
       )
   }
