@@ -10,9 +10,10 @@ function parseLocalDate(dateString: string): Date {
     return new Date(dateString)
   }
   
-  // Parse as local date by splitting and creating Date with local components
-  const [year, month, day] = dateString.split('-').map(Number)
-  return new Date(year, month - 1, day) // month is 0-indexed
+ function parseLocalDate(dateString: string): Date {
+  // Parse date string as local date to avoid timezone offset
+  const date = new Date(dateString + 'T00:00:00')
+  return date
 }
 
 export default async function DashboardPage() {
