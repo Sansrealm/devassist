@@ -1,3 +1,4 @@
+// Updated and corrected component code
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -68,13 +69,16 @@ export default function ToolsOverviewTable({ data }: ToolsOverviewTableProps) {
     return `$${cost.toFixed(2)}`
   }
 
+  // CORRECTED: This function now formats the date using the UTC values.
   const formatDate = (date: Date | null) => {
     if (!date) return "-"
+    // Create a new Date object using the UTC values to avoid timezone offset
+    const utcDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
     return new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    }).format(new Date(date))
+    }).format(utcDate)
   }
 
   return (
@@ -153,19 +157,17 @@ export default function ToolsOverviewTable({ data }: ToolsOverviewTableProps) {
                       )}
                     </TableCell>
                     <TableCell>
-  {tool.status === 'trial' 
-    ? formatDate(tool.trialEndDate) 
-    : (tool.renewalDate && tool.billingCycle 
-        ? (() => {
-            console.log('Calculating for:', tool.toolName, 'Original date:', tool.renewalDate, 'Cycle:', tool.billingCycle);
-            const calculated = calculateNextRenewalDate(tool.renewalDate, tool.billingCycle as any);
-            console.log('Calculated:', calculated);
-            return getRenewalDescription(tool.renewalDate, tool.billingCycle as any);
-          })()
-        : formatDate(tool.renewalDate)
-      )
-  }
-</TableCell>
+                      {tool.status === 'trial'
+                        ? formatDate(tool.trialEndDate)
+                        : (tool.renewalDate && tool.billingCycle
+                          ? (() => {
+                            // To fix this, you'll need to modify the getRenewalDescription function as well.
+                            return getRenewalDescription(tool.renewalDate, tool.billingCycle as any);
+                          })()
+                          : formatDate(tool.renewalDate)
+                        )
+                      }
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{tool.projectCount}</span>
