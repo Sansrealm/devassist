@@ -4,6 +4,17 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardClient from "./dashboard-client"
 
+function parseLocalDate(dateString: string): Date {
+  // If it already has a time component, use as-is
+  if (dateString.includes('T')) {
+    return new Date(dateString)
+  }
+  
+  // Parse as local date by splitting and creating Date with local components
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day) // month is 0-indexed
+}
+
 export default async function DashboardPage() {
   const supabase = createClient()
   const {
@@ -161,8 +172,8 @@ export default async function DashboardPage() {
             toolName: tool.name,
             toolCategory: tool.category,
             monthlyCost,
-            renewalDate: renewalDate ? new Date(renewalDate + 'T12:00:00') : null,
-            trialEndDate: trialEndDate ? new Date(trialEndDate + 'T12:00:00') : null,
+            renewalDate: renewalDate ? parseLocalDate(renewalDate) : null,
+trialEndDate: trialEndDate ? parseLocalDate(trialEndDate) : null,
             projectCount: projects.length,
             projects,
             status,
