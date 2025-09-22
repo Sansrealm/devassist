@@ -10,10 +10,11 @@ function parseLocalDate(dateString: string): Date {
     return new Date(dateString)
   }
   
- function parseLocalDate(dateString: string): Date {
-  // Parse date string as local date to avoid timezone offset
-  const date = new Date(dateString + 'T00:00:00')
-  return date
+  // Split YYYY-MM-DD string into components
+  const [year, month, day] = dateString.split('-').map(Number);
+  
+  // Create date using local time zone (month is 0-indexed)
+  return new Date(year, month - 1, day);
 }
 
 export default async function DashboardPage() {
@@ -174,7 +175,7 @@ export default async function DashboardPage() {
             toolCategory: tool.category,
             monthlyCost,
             renewalDate: renewalDate ? parseLocalDate(renewalDate) : null,
-trialEndDate: trialEndDate ? parseLocalDate(trialEndDate) : null,
+            trialEndDate: trialEndDate ? parseLocalDate(trialEndDate) : null,
             projectCount: projects.length,
             projects,
             status,
