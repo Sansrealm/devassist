@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-
+export const runtime = 'nodejs';
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardClient from "./dashboard-client"

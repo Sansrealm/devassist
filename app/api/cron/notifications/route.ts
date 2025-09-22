@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { processAllNotifications } from "@/lib/notifications/triggers"
+export const runtime = 'nodejs';
 
 // This endpoint will be called by Vercel Cron
 export async function GET(request: NextRequest) {
