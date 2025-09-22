@@ -4,18 +4,8 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardClient from "./dashboard-client"
 
-function parseLocalDate(dateString: string): Date {
-  // If it already has a time component, use as-is
-  if (dateString.includes('T')) {
-    return new Date(dateString)
-  }
-  
-  // Split YYYY-MM-DD string into components
-  const [year, month, day] = dateString.split('-').map(Number);
-  
-  // Create date using local time zone (month is 0-indexed)
-  return new Date(year, month - 1, day);
-}
+// The parseLocalDate function is no longer needed.
+// Supabase now returns dates with time zones, so we can pass them directly to the client.
 
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -110,9 +100,7 @@ export default async function DashboardPage() {
         }
       })
     }
-
   
-
     // Process tools overview data
     const toolsOverviewData = []
     
@@ -150,8 +138,6 @@ export default async function DashboardPage() {
           billingCycle = null
         }
 
-  
-
         // Get project mappings for this tool
         const toolAccountIds = toolAccounts.map(ta => ta.id)
         const projectMappings = (projectToolsResult.data || []).filter(pt =>
@@ -174,8 +160,8 @@ export default async function DashboardPage() {
             toolName: tool.name,
             toolCategory: tool.category,
             monthlyCost,
-            renewalDate: renewalDate ? parseLocalDate(renewalDate) : null,
-            trialEndDate: trialEndDate ? parseLocalDate(trialEndDate) : null,
+            renewalDate: renewalDate, // No parsing needed here
+            trialEndDate: trialEndDate, // No parsing needed here
             projectCount: projects.length,
             projects,
             status,
