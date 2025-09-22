@@ -18,11 +18,10 @@ const toolSchema = z.object({
   logoUrl: z.string().url("Please enter a valid URL").nullable().optional(),
   baseCost: z.coerce.number().min(0, "Base cost must be a valid positive number").nullable().optional(),
   renewalDate: z.string().nullable().optional().refine((date) => {
-  if (!date) return true; // Allow null/empty dates
-  const renewalDate = new Date(date);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset time to start of day
-  return renewalDate >= today;
+  if (!date) return true;
+  const renewalDateUTC = new Date(date + 'T00:00:00Z'); // Force UTC
+  const todayUTC = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z');
+  return renewalDateUTC >= todayUTC;
 }, "Renewal date must be today or in the future"),
 
 trialEndDate: z.string().nullable().optional().refine((date) => {
@@ -282,8 +281,8 @@ export async function createTool(prevState: any, formData: FormData) {
             billing_cycle: validatedData.billingCycle || 'monthly',
             status: validatedData.trialEndDate ? 'trial' : 'active',
             start_date: new Date().toISOString(),
-            renewal_date: validatedData.renewalDate || null,
-            trial_end_date: validatedData.trialEndDate || null,
+            renewal_date: validatedData.renewalDate ? `${validatedData.renewalDate}T00:00:00Z` : null,
+trial_end_date: validatedData.trialEndDate ? `${validatedData.trialEndDate}T00:00:00Z` : null,
             is_auto_renew: true,
           }
         })

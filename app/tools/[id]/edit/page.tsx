@@ -1,3 +1,4 @@
+// File: app/tools/[id]/edit/page.tsx
 export const dynamic = 'force-dynamic'
 
 import { createClient } from "@/lib/supabase/server"
@@ -46,7 +47,7 @@ export default async function EditToolPage({ params }: EditToolPageProps) {
       console.error("Emails fetch error:", emailsError)
     }
 
-    // NEW: Fetch tool accounts and subscription data
+    // Fetch tool accounts and subscription data
     const { data: toolAccounts, error: toolAccountsError } = await supabase
       .from('tool_accounts')
       .select(`
@@ -86,12 +87,9 @@ export default async function EditToolPage({ params }: EditToolPageProps) {
     // Extract subscription data (use the first subscription if multiple exist)
     const firstSubscription = toolAccounts?.[0]?.subscriptions?.[0]
     const subscriptionData = firstSubscription ? {
-      renewalDate: firstSubscription.renewal_date 
-        ? new Date(firstSubscription.renewal_date).toISOString().split('T')[0] 
-        : null,
-      trialEndDate: firstSubscription.trial_end_date 
-        ? new Date(firstSubscription.trial_end_date).toISOString().split('T')[0] 
-        : null,
+      // FIX: Pass the full, timezone-aware ISO string to the form
+      renewalDate: firstSubscription.renewal_date,
+      trialEndDate: firstSubscription.trial_end_date,
       billingCycle: firstSubscription.billing_cycle || null,
       cost: firstSubscription.cost?.toString() || null,
       status: firstSubscription.status || null
@@ -105,19 +103,19 @@ export default async function EditToolPage({ params }: EditToolPageProps) {
 
     console.log("📅 Extracted subscription data:", subscriptionData)
 
-  const initialData = {
-  id: tool.id,
-  name: tool.name,
-  description: tool.description,
-  category: tool.category,
-  logoUrl: tool.logo_url,
-  websiteUrl: tool.website_url,
-  baseCost: tool.base_cost,
-  renewalDate: subscriptionData.renewalDate,
-  trialEndDate: subscriptionData.trialEndDate,
-  billingCycle: subscriptionData.billingCycle,
-  subscriptionStatus: subscriptionData.status, 
-}
+    const initialData = {
+      id: tool.id,
+      name: tool.name,
+      description: tool.description,
+      category: tool.category,
+      logoUrl: tool.logo_url,
+      websiteUrl: tool.website_url,
+      baseCost: tool.base_cost,
+      renewalDate: subscriptionData.renewalDate,
+      trialEndDate: subscriptionData.trialEndDate,
+      billingCycle: subscriptionData.billingCycle,
+      subscriptionStatus: subscriptionData.status, 
+    }
 
     return (
       <div className="min-h-screen bg-background">
