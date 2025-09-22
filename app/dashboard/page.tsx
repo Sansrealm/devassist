@@ -118,6 +118,7 @@ export default async function DashboardPage() {
         let renewalDate = null
         let trialEndDate = null
         let status = null
+        let billingCycle = null
         
 
         if (toolSubscriptions.length > 0) {
@@ -128,10 +129,12 @@ export default async function DashboardPage() {
           renewalDate = activeSub.renewal_date
           trialEndDate = activeSub.trial_end_date
           status = activeSub.status
+          billingCycle = activeSub.billing_cycle
         } else {
           // Use base cost
           monthlyCost = parseFloat(tool.base_cost) || 0
           status = monthlyCost > 0 ? 'active' : null
+          billingCycle = null
         }
 
   
@@ -163,6 +166,7 @@ export default async function DashboardPage() {
             projectCount: projects.length,
             projects,
             status
+            billingCycle 
           })
         }
       }
