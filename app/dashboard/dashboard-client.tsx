@@ -53,7 +53,8 @@ export default function DashboardClient({
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     project: "all",
-    category: "all"
+    category: "all",
+    underutilized: false // New filter state
   })
 
   // Extract unique categories from the tools data
@@ -67,6 +68,13 @@ export default function DashboardClient({
   // Filter the tools data based on current filters
   const filteredToolsData = useMemo(() => {
     return toolsOverviewData.filter(tool => {
+      // Underutilized filter - apply the same criteria as the analysis
+      if (filters.underutilized) {
+        if (!(tool.projectCount < 1 && tool.monthlyCost > 10 && tool.status !== 'trial')) {
+          return false
+        }
+      }
+
       // Search filter (tool name)
       if (filters.search && !tool.toolName.toLowerCase().includes(filters.search.toLowerCase())) {
         return false
@@ -113,14 +121,15 @@ export default function DashboardClient({
   }, [filteredToolsData])
 
   // Check if any filters are active
-  const hasActiveFilters = filters.search !== "" || filters.project !== "all" || filters.category !== "all"
+  const hasActiveFilters = filters.search !== "" || filters.project !== "all" || filters.category !== "all" || filters.underutilized
 
-  // Handle potential savings click - filter to show underutilized tools
+  // Handle potential savings click - filter to show underutilized tools only
   const handlePotentialSavingsClick = () => {
     setFilters({
       search: "",
-      project: "unassigned", // Show tools with no projects
-      category: "all"
+      project: "all",
+      category: "all",
+      underutilized: true // Set the specific underutilized filter
     })
   }
 

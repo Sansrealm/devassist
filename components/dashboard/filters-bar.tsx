@@ -3,12 +3,14 @@
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Search, X, Filter } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Search, X, Filter, AlertTriangle } from "lucide-react"
 
 export interface FilterState {
   search: string
   project: string
   category: string
+  underutilized: boolean // New filter for underutilized tools
 }
 
 interface Project {
@@ -24,7 +26,7 @@ interface FiltersBarProps {
 }
 
 export default function FiltersBar({ filters, onFiltersChange, projects, categories }: FiltersBarProps) {
-  const updateFilter = (key: keyof FilterState, value: string) => {
+  const updateFilter = (key: keyof FilterState, value: string | boolean) => {
     onFiltersChange({
       ...filters,
       [key]: value
@@ -35,14 +37,16 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
     onFiltersChange({
       search: "",
       project: "all",
-      category: "all"
+      category: "all",
+      underutilized: false // Clear underutilized filter too
     })
   }
 
   const hasActiveFilters = 
     filters.search !== "" || 
     filters.project !== "all" || 
-    filters.category !== "all"
+    filters.category !== "all" ||
+    filters.underutilized
 
   return (
     <div className="flex flex-wrap items-center gap-3 px-4 py-3 border border-gray-800 rounded-lg hover:border-gray-700 transition-colors">
@@ -52,6 +56,20 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
         <Filter className="h-4 w-4 text-gray-400" />
         <span className="text-sm font-medium text-white hidden sm:block">Filter:</span>
       </div>
+
+      {/* Active Filter Badges */}
+      {filters.underutilized && (
+        <Badge variant="secondary" className="bg-orange-500/10 text-orange-600 border-orange-500/20">
+          <AlertTriangle className="h-3 w-3 mr-1" />
+          Underutilized
+          <button
+            onClick={() => updateFilter("underutilized", false)}
+            className="ml-1 hover:text-orange-800"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </Badge>
+      )}
 
       {/* Search Input */}
       <div className="flex-1 min-w-[240px]">
