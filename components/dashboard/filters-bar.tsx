@@ -45,7 +45,7 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
     filters.category !== "all"
 
   return (
-    <div className="flex flex-wrap items-center gap-3 px-4 py-3 border border-gray-300 rounded-lg hover:border-gray-200 transition-colors">
+    <div className="flex flex-wrap items-center gap-3 px-4 py-3 border border-gray-800 rounded-lg hover:border-gray-700 transition-colors">
       
       {/* Filter Label */}
       <div className="flex items-center gap-2">
