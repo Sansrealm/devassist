@@ -148,6 +148,7 @@ export default function DashboardClient({
           <SubscriptionsOverviewCard
             activeSubscriptions={hasActiveFilters ? filteredTotals.activeSubscriptions : activeSubscriptions}
             trialSubscriptions={hasActiveFilters ? filteredTotals.trialSubscriptions : trialSubscriptions}
+            toolsOverviewData={toolsOverviewData}
           />
         </div>
 
