@@ -45,23 +45,12 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
     filters.category !== "all"
 
   return (
-    <div className="flex flex-wrap items-center gap-3 px-5 py-4 bg-white/70 backdrop-blur-sm rounded-xl border border-gray-200/60 shadow-sm transition-all duration-200 hover:bg-white/80">
+    <div className="flex flex-wrap items-center gap-3 px-4 py-3 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
       
-      {/* Filter Label & Clear Button */}
+      {/* Filter Label */}
       <div className="flex items-center gap-2">
         <Filter className="h-4 w-4 text-gray-500" />
         <span className="text-sm font-medium text-gray-700 hidden sm:block">Filter:</span>
-        {hasActiveFilters && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={clearFilters}
-            className="h-8 px-2 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100/80 border border-gray-200/60 rounded-lg transition-colors"
-          >
-            <X className="h-3 w-3 mr-1" />
-            Clear
-          </Button>
-        )}
       </div>
 
       {/* Search Input */}
@@ -70,7 +59,7 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input 
             placeholder="Search tools..." 
-            className="h-9 pl-9 text-sm border-gray-200/60 bg-white/90 hover:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all" 
+            className="h-9 pl-9 text-sm border-gray-200 bg-white hover:border-gray-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all" 
             value={filters.search}
             onChange={(e) => updateFilter("search", e.target.value)}
           />
@@ -83,7 +72,7 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
       {/* Project Filter */}
       <div className="min-w-[140px]">
         <Select value={filters.project} onValueChange={(value) => updateFilter("project", value)}>
-          <SelectTrigger className="h-9 text-sm border-gray-200/60 bg-white/90 hover:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all">
+          <SelectTrigger className="h-9 text-sm border-gray-200 bg-white hover:border-gray-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all">
             <div className="flex items-center w-full">
               <SelectValue placeholder="Project" />
               {filters.project !== "all" && (
@@ -106,7 +95,7 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
       {/* Category Filter */}
       <div className="min-w-[140px]">
         <Select value={filters.category} onValueChange={(value) => updateFilter("category", value)}>
-          <SelectTrigger className="h-9 text-sm border-gray-200/60 bg-white/90 hover:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all">
+          <SelectTrigger className="h-9 text-sm border-gray-200 bg-white hover:border-gray-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all">
             <div className="flex items-center w-full">
               <SelectValue placeholder="Category" />
               {filters.category !== "all" && (
@@ -124,6 +113,19 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
           </SelectContent>
         </Select>
       </div>
+
+      {/* Clear Button - Moved to the right */}
+      {hasActiveFilters && (
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={clearFilters}
+          className="h-9 px-3 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors"
+        >
+          <X className="h-4 w-4 mr-1" />
+          Clear
+        </Button>
+      )}
     </div>
   )
 }
