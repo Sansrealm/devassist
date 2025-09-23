@@ -3,10 +3,10 @@
 import { useState, useMemo } from "react"
 import DashboardHeader from "@/components/dashboard/dashboard-header"
 import MonthlySpendCard from "@/components/dashboard/monthly-spend-card"
+import SubscriptionsOverviewCard from "@/components/dashboard/subscriptions-overview-card"
 import FiltersBar, { FilterState } from "@/components/dashboard/filters-bar"
 import ToolsOverviewTable from "@/components/dashboard/tools-overview-table"
 import SpendingByCategories from "@/components/dashboard/spending-by-categories"
-//import SavingsOpportunities from "@/components/dashboard/savings-opportunities"
 
 interface ToolOverview {
   toolId: string
@@ -66,63 +66,70 @@ export default function DashboardClient({
 
   // Filter the tools data based on current filters
   const filteredToolsData = useMemo(() => {
-  return toolsOverviewData.filter(tool => {
-    // Search filter (tool name)
-    if (filters.search && !tool.toolName.toLowerCase().includes(filters.search.toLowerCase())) {
-      return false
-    }
+    return toolsOverviewData.filter(tool => {
+      // Search filter (tool name)
+      if (filters.search && !tool.toolName.toLowerCase().includes(filters.search.toLowerCase())) {
+        return false
+      }
 
-    // Category filter
-    if (filters.category !== "all" && tool.toolCategory !== filters.category) {
-      return false
-    }
+      // Category filter
+      if (filters.category !== "all" && tool.toolCategory !== filters.category) {
+        return false
+      }
 
-    // Project filter
-    if (filters.project !== "all") {
-      if (filters.project === "unassigned") {
-        // Show tools with no projects
-        if (tool.projects.length > 0) {
-          return false
-        }
-      } else {
-        // Show tools assigned to specific project
-        if (!tool.projects.some(project => project.id === filters.project)) {
-          return false
+      // Project filter
+      if (filters.project !== "all") {
+        if (filters.project === "unassigned") {
+          // Show tools with no projects
+          if (tool.projects.length > 0) {
+            return false
+          }
+        } else {
+          // Show tools assigned to specific project
+          if (!tool.projects.some(project => project.id === filters.project)) {
+            return false
+          }
         }
       }
-    }
 
-    return true
-  })
-}, [toolsOverviewData, filters])
+      return true
+    })
+  }, [toolsOverviewData, filters])
 
   // Calculate filtered totals for display
   const filteredTotals = useMemo(() => {
-  const filteredSpend = filteredToolsData
-    .filter(tool => tool.status === 'active')
-    .reduce((sum, tool) => sum + tool.monthlyCost, 0)
-  
-  const filteredActive = filteredToolsData.filter(tool => tool.status === 'active').length
-  const filteredTrial = filteredToolsData.filter(tool => tool.status === 'trial').length
+    const filteredSpend = filteredToolsData
+      .filter(tool => tool.status === 'active')
+      .reduce((sum, tool) => sum + tool.monthlyCost, 0)
+    
+    const filteredActive = filteredToolsData.filter(tool => tool.status === 'active').length
+    const filteredTrial = filteredToolsData.filter(tool => tool.status === 'trial').length
 
-  return {
-    totalSpend: filteredSpend,
-    activeSubscriptions: filteredActive,
-    trialSubscriptions: filteredTrial
-  }
-}, [filteredToolsData])
+    return {
+      totalSpend: filteredSpend,
+      activeSubscriptions: filteredActive,
+      trialSubscriptions: filteredTrial
+    }
+  }, [filteredToolsData])
+
+  // Check if any filters are active
+  const hasActiveFilters = filters.search !== "" || filters.project !== "all" || filters.category !== "all"
 
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader user={user} />
 
       <main className="container mx-auto px-4 py-8 space-y-4">
-        {/* Monthly Spend Overview - show filtered or total based on whether filters are active */}
-        <MonthlySpendCard
-  totalSpend={filters.search || filters.project !== "all" || filters.category !== "all" ? filteredTotals.totalSpend : totalSpend}
-  activeSubscriptions={filters.search || filters.project !== "all" || filters.category !== "all" ? filteredTotals.activeSubscriptions : activeSubscriptions}
-  trialSubscriptions={filters.search || filters.project !== "all" || filters.category !== "all" ? filteredTotals.trialSubscriptions : trialSubscriptions}
-/>
+        {/* Combined Spending and Subscriptions Overview */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <MonthlySpendCard
+            totalSpend={hasActiveFilters ? filteredTotals.totalSpend : totalSpend}
+          />
+          <SubscriptionsOverviewCard
+            activeSubscriptions={hasActiveFilters ? filteredTotals.activeSubscriptions : activeSubscriptions}
+            trialSubscriptions={hasActiveFilters ? filteredTotals.trialSubscriptions : trialSubscriptions}
+          />
+        </div>
 
         {/* Filters */}
         <FiltersBar 
