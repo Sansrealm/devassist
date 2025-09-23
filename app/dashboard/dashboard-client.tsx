@@ -115,6 +115,15 @@ export default function DashboardClient({
   // Check if any filters are active
   const hasActiveFilters = filters.search !== "" || filters.project !== "all" || filters.category !== "all"
 
+  // Handle potential savings click - filter to show underutilized tools
+  const handlePotentialSavingsClick = () => {
+    setFilters({
+      search: "",
+      project: "unassigned", // Show tools with no projects
+      category: "all"
+    })
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader user={user} />
@@ -124,6 +133,8 @@ export default function DashboardClient({
         <div className="grid gap-4 md:grid-cols-2">
           <MonthlySpendCard
             totalSpend={hasActiveFilters ? filteredTotals.totalSpend : totalSpend}
+            filteredToolsData={filteredToolsData}
+            onPotentialSavingsClick={handlePotentialSavingsClick}
           />
           <SubscriptionsOverviewCard
             activeSubscriptions={hasActiveFilters ? filteredTotals.activeSubscriptions : activeSubscriptions}
