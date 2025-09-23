@@ -45,12 +45,12 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
     filters.category !== "all"
 
   return (
-    <div className="flex flex-wrap items-center gap-3 px-4 py-3 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
+    <div className="flex flex-wrap items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg hover:border-gray-200 transition-colors">
       
       {/* Filter Label */}
       <div className="flex items-center gap-2">
-        <Filter className="h-4 w-4 text-gray-500" />
-        <span className="text-sm font-medium text-gray-700 hidden sm:block">Filter:</span>
+        <Filter className="h-4 w-4 text-gray-400" />
+        <span className="text-sm font-medium text-white hidden sm:block">Filter:</span>
       </div>
 
       {/* Search Input */}
@@ -59,7 +59,7 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input 
             placeholder="Search tools..." 
-            className="h-9 pl-9 text-sm border-gray-200 bg-white hover:border-gray-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all" 
+            className="h-9 pl-9 text-sm border-gray-600 bg-transparent hover:border-gray-500 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" 
             value={filters.search}
             onChange={(e) => updateFilter("search", e.target.value)}
           />
@@ -72,7 +72,7 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
       {/* Project Filter */}
       <div className="min-w-[140px]">
         <Select value={filters.project} onValueChange={(value) => updateFilter("project", value)}>
-          <SelectTrigger className="h-9 text-sm border-gray-200 bg-white hover:border-gray-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all">
+          <SelectTrigger className="h-9 text-sm border-gray-600 bg-transparent hover:border-gray-500 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all">
             <div className="flex items-center w-full">
               <SelectValue placeholder="Project" />
               {filters.project !== "all" && (
@@ -95,7 +95,7 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
       {/* Category Filter */}
       <div className="min-w-[140px]">
         <Select value={filters.category} onValueChange={(value) => updateFilter("category", value)}>
-          <SelectTrigger className="h-9 text-sm border-gray-200 bg-white hover:border-gray-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all">
+          <SelectTrigger className="h-9 text-sm border-gray-600 bg-transparent hover:border-gray-500 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all">
             <div className="flex items-center w-full">
               <SelectValue placeholder="Category" />
               {filters.category !== "all" && (
@@ -120,7 +120,7 @@ export default function FiltersBar({ filters, onFiltersChange, projects, categor
           variant="ghost" 
           size="sm" 
           onClick={clearFilters}
-          className="h-9 px-3 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors"
+          className="h-9 px-3 text-sm text-gray-400 hover:text-gray-300 hover:bg-gray-800 border border-gray-600 hover:border-gray-500 rounded-lg transition-colors"
         >
           <X className="h-4 w-4 mr-1" />
           Clear
