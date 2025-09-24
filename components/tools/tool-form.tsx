@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2, ArrowLeft, Plus, X } from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Loader2, ArrowLeft, Plus, X, ChevronDown, ChevronRight } from "lucide-react"
 import { createTool } from "@/lib/tools/actions"
 import { ToolSearchInput } from "@/components/tools/tool-search-input"
 import Link from "next/link"
@@ -59,7 +60,7 @@ function SubmitButton({ isEditing }: { isEditing?: boolean }) {
     <Button
       type="submit"
       disabled={pending}
-      className="bg-gradient-to-r from-[#002F71] to-[#0A4BA0] hover:from-[#001f4d] hover:to-[#083d87]"
+      className="w-full bg-gradient-to-r from-[#002F71] to-[#0A4BA0] hover:from-[#001f4d] hover:to-[#083d87] h-11"
     >
       {pending ? (
         <>
@@ -78,6 +79,7 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
   const [state, formAction] = useActionState(createTool, null)
   const [newEmail, setNewEmail] = useState("")
   const [tempEmails, setTempEmails] = useState<string[]>([])
+  const [showOptionalFields, setShowOptionalFields] = useState(false)
   const [subscriptionType, setSubscriptionType] = useState<string>(() => {
     if (initialData?.subscriptionStatus) return initialData.subscriptionStatus
     if (initialData?.trialEndDate) return 'trial'
@@ -134,306 +136,311 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
   // Determine what date fields to show
   const showRenewalDate = subscriptionType === 'active' || (!isEditing && subscriptionType !== 'trial')
   const showTrialEndDate = subscriptionType === 'trial' || (!isEditing && subscriptionType !== 'active')
-  const showSubscriptionTypeSelector = !isEditing || (isEditing && subscriptionType === 'trial') // Show selector for new tools OR when editing trial subscriptions (allow upgrade to active)
+  const showSubscriptionTypeSelector = !isEditing || (isEditing && subscriptionType === 'trial')
 
   return (
-    <Card className="border-2 border-transparent bg-gradient-to-r from-[#002F71] to-[#0A4BA0] p-[2px]">
-      <div className="bg-background rounded-[calc(var(--radius)-2px)]">
-        <CardHeader>
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/tools">
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
-            <div>
-              <CardTitle>{isEditing ? "Edit Tool" : "Add New Tool"}</CardTitle>
-              <CardDescription>
-                {isEditing ? "Update tool information" : "Enter the details for your development tool"}
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
+    <div className="max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/tools">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {isEditing ? "Edit Tool" : "Add New Tool"}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {isEditing ? "Update your tool and subscription details" : "Add a tool to track costs and usage"}
+          </p>
+        </div>
+      </div>
+
+      {/* Form */}
+      <Card className="border-none shadow-sm">
+        <CardContent className="p-6">
           <form action={formAction} className="space-y-6">
             {initialData && <input type="hidden" name="id" value={initialData.id} />}
 
             {state?.error && (
-              <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded-md text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
                 {state.error}
               </div>
             )}
 
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Clean Tool Name Input */}
-              <div className="space-y-2">
-                <ToolSearchInput
-                  value={toolName}
-                  onChange={handleToolNameChange}
-                  onTemplateSelect={handleTemplateSelect}
-                  required
-                  label="Tool Name"
-                  placeholder="e.g., Figma, Linear, Vercel"
-                  disabled={isEditing}
-                />
-                {/* Hidden input for form submission */}
-                <input type="hidden" name="name" value={toolName} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select name="category" value={category} onValueChange={setCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="development">Development</SelectItem>
-                    <SelectItem value="design">Design</SelectItem>
-                    <SelectItem value="productivity">Productivity</SelectItem>
-                    <SelectItem value="communication">Communication</SelectItem>
-                    <SelectItem value="analytics">Analytics</SelectItem>
-                    <SelectItem value="marketing">Marketing</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                placeholder="Brief description of what this tool is used for"
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="websiteUrl">Website URL</Label>
-                <Input
-                  id="websiteUrl"
-                  name="websiteUrl"
-                  type="url"
-                  placeholder="https://example.com"
-                  value={websiteUrl}
-                  onChange={(e) => setWebsiteUrl(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="logoUrl">Logo URL</Label>
-                <Input
-                  id="logoUrl"
-                  name="logoUrl"
-                  type="url"
-                  placeholder="https://example.com/logo.png"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="baseCost">Base Cost (USD)</Label>
-              <Input
-                id="baseCost"
-                name="baseCost"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                value={baseCost}
-                onChange={(e) => setBaseCost(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Monthly cost for this tool (can be overridden per subscription)
-              </p>
-            </div>
-
-            {/* Conditional Subscription Type Selector for New Tools */}
-            {showSubscriptionTypeSelector && (
-              <div className="space-y-2">
-                <Label htmlFor="subscriptionType">Subscription Type</Label>
-                <Select value={subscriptionType} onValueChange={setSubscriptionType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select subscription type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active Subscription</SelectItem>
-                    <SelectItem value="trial">Free Trial</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Choose whether this is an active paid subscription or free trial
-                </p>
-              </div>
-            )}
-
-            {/* Conditional Date Fields */}
-            <div className="grid gap-6 md:grid-cols-2">
-              {showRenewalDate && (
+            {/* Essential Fields */}
+            <div className="space-y-6">
+              {/* Tool Name & Category */}
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="renewalDate">Renewal Date</Label>
-                  <Input
-                    id="renewalDate"
-                    name="renewalDate"
-                    type="date"
-                    placeholder="YYYY-MM-DD"
-                    min={new Date().toISOString().split('T')[0]} // Prevent past dates
-                    defaultValue={initialData?.renewalDate || ""}
+                  <Label htmlFor="toolName" className="text-sm font-medium">
+                    Tool Name <span className="text-red-500">*</span>
+                  </Label>
+                  <ToolSearchInput
+                    value={toolName}
+                    onChange={handleToolNameChange}
+                    onTemplateSelect={handleTemplateSelect}
+                    required
+                    placeholder="e.g., Figma, Linear, Vercel"
+                    disabled={isEditing}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    When your subscription renews (must be a future date)
-                  </p>
+                  <input type="hidden" name="name" value={toolName} />
                 </div>
-              )}
 
-              {showTrialEndDate && (
                 <div className="space-y-2">
-                  <Label htmlFor="trialEndDate">Trial End Date</Label>
-                  <Input
-                    id="trialEndDate"
-                    name="trialEndDate"
-                    type="date"
-                    placeholder="YYYY-MM-DD"
-                    min={new Date().toISOString().split('T')[0]} // Prevent past dates
-                    defaultValue={initialData?.trialEndDate || ""}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    When your free trial expires (must be a future date)
-                  </p>
-                </div>
-              )}
-
-              {/* Show billing cycle field if we have either date type */}
-              {(showRenewalDate || showTrialEndDate) && (
-                <div className="space-y-2">
-                  <Label htmlFor="billingCycle">Billing Cycle</Label>
-                  <Select name="billingCycle" value={billingCycle} onValueChange={setBillingCycle}>
+                  <Label htmlFor="category" className="text-sm font-medium">Category</Label>
+                  <Select name="category" value={category} onValueChange={setCategory}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select billing cycle" />
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                      <SelectItem value="quarterly">Quarterly</SelectItem>
-                      <SelectItem value="one-time">One-time</SelectItem>
+                      <SelectItem value="development">Development</SelectItem>
+                      <SelectItem value="design">Design</SelectItem>
+                      <SelectItem value="productivity">Productivity</SelectItem>
+                      <SelectItem value="communication">Communication</SelectItem>
+                      <SelectItem value="analytics">Analytics</SelectItem>
+                      <SelectItem value="marketing">Marketing</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    How often you're billed for this tool
-                  </p>
+                </div>
+              </div>
+
+              {/* Cost */}
+              <div className="space-y-2">
+                <Label htmlFor="baseCost" className="text-sm font-medium">Monthly Cost (USD)</Label>
+                <Input
+                  id="baseCost"
+                  name="baseCost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={baseCost}
+                  onChange={(e) => setBaseCost(e.target.value)}
+                  className="max-w-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  The monthly cost for this tool
+                </p>
+              </div>
+
+              {/* Subscription Type & Billing */}
+              {showSubscriptionTypeSelector && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="subscriptionType" className="text-sm font-medium">Subscription Status</Label>
+                    <Select value={subscriptionType} onValueChange={setSubscriptionType}>
+                      <SelectTrigger className="max-w-xs">
+                        <SelectValue placeholder="Select subscription type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No subscription</SelectItem>
+                        <SelectItem value="trial">Free Trial</SelectItem>
+                        <SelectItem value="active">Paid Subscription</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Date Fields */}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {showTrialEndDate && (
+                      <div className="space-y-2">
+                        <Label htmlFor="trialEndDate" className="text-sm font-medium">Trial End Date</Label>
+                        <Input
+                          id="trialEndDate"
+                          name="trialEndDate"
+                          type="date"
+                          defaultValue={initialData?.trialEndDate || ""}
+                        />
+                      </div>
+                    )}
+
+                    {showRenewalDate && (
+                      <div className="space-y-2">
+                        <Label htmlFor="renewalDate" className="text-sm font-medium">Next Renewal</Label>
+                        <Input
+                          id="renewalDate"
+                          name="renewalDate"
+                          type="date"
+                          defaultValue={initialData?.renewalDate || ""}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Billing Cycle */}
+                  {(showRenewalDate || showTrialEndDate) && (
+                    <div className="space-y-2">
+                      <Label htmlFor="billingCycle" className="text-sm font-medium">Billing Cycle</Label>
+                      <Select name="billingCycle" value={billingCycle} onValueChange={setBillingCycle}>
+                        <SelectTrigger className="max-w-xs">
+                          <SelectValue placeholder="Select billing cycle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                          <SelectItem value="one-time">One-time</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
 
-            {/* Email Management */}
-            <div className="space-y-4">
-              <Label>Email Accounts *</Label>
-              
-              {/* Add New Email */}
-              <div className="space-y-3">
+              {/* Email Accounts */}
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">
+                  Email Accounts <span className="text-red-500">*</span>
+                </Label>
+                
+                {/* Existing Emails */}
+                <div className="space-y-3">
+                  {userEmails.map((email) => (
+                    <div key={email.id} className="flex items-center space-x-3 p-3 border rounded-lg bg-gray-50">
+                      <Checkbox 
+                        id={`email-${email.id}`} 
+                        name="emailIds" 
+                        value={email.id}
+                        defaultChecked={
+                          isEditing 
+                            ? email.isAssociated 
+                            : email.isPrimary
+                        }
+                      />
+                      <div className="flex-1">
+                        <label 
+                          htmlFor={`email-${email.id}`}
+                          className="text-sm font-medium cursor-pointer"
+                        >
+                          {email.email}
+                        </label>
+                        {email.isPrimary && (
+                          <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                            Primary
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Temporary Emails */}
+                  {tempEmails.map((email) => (
+                    <div key={email} className="flex items-center space-x-3 p-3 border rounded-lg bg-blue-50">
+                      <Checkbox 
+                        name="newEmails" 
+                        value={email}
+                        defaultChecked={true}
+                        disabled={true}
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm font-medium">{email}</span>
+                        <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                          New
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeTempEmail(email)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add New Email */}
                 <div className="flex gap-2">
                   <Input
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="Add new email (e.g., work@company.com)"
+                    placeholder="Add email (e.g., work@company.com)"
                     type="email"
                     className="flex-1"
                   />
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
                     onClick={addTempEmail}
                     disabled={!newEmail || !isValidEmail(newEmail)}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Add emails you use for different tools (personal, work, etc.)
-                </p>
               </div>
-
-              {/* Existing Emails */}
-              <div className="space-y-3">
-                {userEmails.map((email) => (
-                  <div key={email.id} className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={`email-${email.id}`} 
-                      name="emailIds" 
-                      value={email.id}
-                      defaultChecked={
-                        isEditing 
-                          ? email.isAssociated || false 
-                          : email.isPrimary
-                      }
-                    />
-                    <Label htmlFor={`email-${email.id}`} className="flex-1">
-                      {email.email}
-                      {email.isPrimary && (
-                        <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded">Primary</span>
-                      )}
-                    </Label>
-                  </div>
-                ))}
-
-                {/* Temporary Emails */}
-                {tempEmails.map((email, index) => (
-                  <div key={`temp-${index}`} className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={`temp-email-${index}`} 
-                      name="newEmails" 
-                      value={email}
-                      defaultChecked={true}
-                    />
-                    <Label htmlFor={`temp-email-${index}`} className="flex-1">
-                      {email}
-                      <span className="ml-2 text-xs bg-green-500/10 text-green-600 px-2 py-1 rounded">New</span>
-                    </Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeTempEmail(email)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                Select which email accounts this tool should be associated with (at least one required)
-              </p>
             </div>
 
-            {/* Show warning if no emails exist */}
-            {userEmails.length === 0 && tempEmails.length === 0 && (
-              <div className="bg-orange-50 border border-orange-200 rounded-md p-4">
-                <p className="text-sm text-orange-800">
-                  Please add at least one email address above, or 
-                  <Link href="/settings" className="underline ml-1">
-                    add email in settings
-                  </Link>
-                </p>
-              </div>
-            )}
+            {/* Optional Fields - Collapsible */}
+            <Collapsible open={showOptionalFields} onOpenChange={setShowOptionalFields}>
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-between p-0 h-auto font-normal text-sm text-muted-foreground hover:text-foreground"
+                  type="button"
+                >
+                  <span>Additional details (optional)</span>
+                  {showOptionalFields ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent className="space-y-4 pt-4">
+                {/* Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    placeholder="Brief description of what this tool is used for"
+                    rows={3}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
 
-            <div className="flex justify-end space-x-4">
-              <Button variant="outline" asChild>
-                <Link href="/tools">Cancel</Link>
-              </Button>
+                {/* URLs */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="websiteUrl" className="text-sm font-medium">Website URL</Label>
+                    <Input
+                      id="websiteUrl"
+                      name="websiteUrl"
+                      type="url"
+                      placeholder="https://example.com"
+                      value={websiteUrl}
+                      onChange={(e) => setWebsiteUrl(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="logoUrl" className="text-sm font-medium">Logo URL</Label>
+                    <Input
+                      id="logoUrl"
+                      name="logoUrl"
+                      type="url"
+                      placeholder="https://example.com/logo.png"
+                      value={logoUrl}
+                      onChange={(e) => setLogoUrl(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Submit Button */}
+            <div className="pt-4">
               <SubmitButton isEditing={isEditing} />
             </div>
           </form>
         </CardContent>
-      </div>
-    </Card>
+      </Card>
+    </div>
   )
 }
