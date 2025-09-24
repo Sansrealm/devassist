@@ -134,7 +134,7 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
   // Determine what date fields to show
   const showRenewalDate = subscriptionType === 'active' || (!isEditing && subscriptionType !== 'trial')
   const showTrialEndDate = subscriptionType === 'trial' || (!isEditing && subscriptionType !== 'active')
-  const showSubscriptionTypeSelector = !isEditing // Only show for new tools
+  const showSubscriptionTypeSelector = !isEditing || (isEditing && subscriptionType === 'trial') // Show selector for new tools OR when editing trial subscriptions (allow upgrade to active)
 
   return (
     <Card className="border-2 border-transparent bg-gradient-to-r from-[#002F71] to-[#0A4BA0] p-[2px]">
