@@ -177,7 +177,8 @@ export default function EnhancedMappingActions({
   const unmappedProjectsCount = selectedTool ? getUnmappedProjectsForTool(selectedTool).length : 0
 
   return (
-    <div className="space-y-6">
+  <div className="space-y-6">
+    <div className="grid gap-6 lg:grid-cols-2">
       {/* Quick Mapping Overview */}
       <Card>
         <CardHeader>
@@ -371,6 +372,7 @@ export default function EnhancedMappingActions({
           </div>
         </CardContent>
       </Card>
+       </div>
     </div>
   )
 }
