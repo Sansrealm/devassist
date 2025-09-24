@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import SignInForm from "@/components/auth/sign-in-form"
 
-export const dynamic = 'force-dynamic'
 
 // Enhanced Open Graph metadata for sign-in page
 export const metadata: Metadata = {
