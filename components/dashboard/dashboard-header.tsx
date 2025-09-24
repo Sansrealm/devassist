@@ -11,13 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, Settings, Plus, Menu, Moon, Sun, Rocket } from "lucide-react"
+import { LogOut, Settings, Plus, Menu, Moon, Sun, Rocket } from "lucide-react" // ADD: Rocket icon
 import { signOut } from "@/lib/auth/actions"
 import { useTheme } from "next-themes"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import BetaSignupModal from "@/components/beta/beta-signup-modal"
-import { hasReachedToolLimit } from "@/lib/tool-limits"
+import BetaSignupModal from "@/components/beta/beta-signup-modal" // ADD: Import beta modal
 
 interface DashboardHeaderProps {
   user: {
@@ -27,17 +26,23 @@ interface DashboardHeaderProps {
       avatar_url?: string
       full_name?: string
     }
+    toolCount?: number    // ADD: Tool count
+    isBetaReady?: boolean // ADD: Beta status
   }
-  toolCount?: number
-  isBetaReady?: boolean
 }
 
-export default function DashboardHeader({ user, toolCount = 0, isBetaReady = false }: DashboardHeaderProps) {
+export default function DashboardHeader({ user }: DashboardHeaderProps) {
   const { theme, setTheme } = useTheme()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [betaModalOpen, setBetaModalOpen] = useState(false)
+  const [betaModalOpen, setBetaModalOpen] = useState(false) // ADD: Beta modal state
   const userInitials = user.email?.charAt(0).toUpperCase() || "U"
+
+  // ADD: Simple button logic
+  const toolCount = user.toolCount || 0
+  const isBetaReady = user.isBetaReady || false
+  const showAddToolButton = toolCount < 10
+  const showBetaButton = toolCount >= 10 && !isBetaReady
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
@@ -52,10 +57,6 @@ export default function DashboardHeader({ user, toolCount = 0, isBetaReady = fal
     }
     return pathname.startsWith(href)
   }
-
-  // Determine which button to show
-  const showBetaButton = hasReachedToolLimit(toolCount) && !isBetaReady
-  const showAddToolButton = !hasReachedToolLimit(toolCount)
 
   return (
     <>
@@ -97,7 +98,7 @@ export default function DashboardHeader({ user, toolCount = 0, isBetaReady = fal
 
             {/* Right Side Actions */}
             <div className="flex items-center space-x-3">
-              {/* Add Tool or Beta Button */}
+              {/* CONDITIONAL: Add Tool Button (show if < 10 tools) */}
               {showAddToolButton && (
                 <Button 
                   size="sm" 
@@ -111,6 +112,7 @@ export default function DashboardHeader({ user, toolCount = 0, isBetaReady = fal
                 </Button>
               )}
 
+              {/* CONDITIONAL: Beta Button (show if >= 10 tools and not signed up) */}
               {showBetaButton && (
                 <Button 
                   size="sm" 
@@ -214,7 +216,7 @@ export default function DashboardHeader({ user, toolCount = 0, isBetaReady = fal
         </div>
       </header>
 
-      {/* Beta Signup Modal */}
+      {/* ADD: Beta Signup Modal */}
       <BetaSignupModal 
         open={betaModalOpen} 
         onOpenChange={setBetaModalOpen}

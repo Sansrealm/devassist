@@ -3,7 +3,6 @@ export const runtime = 'nodejs';
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardClient from "./dashboard-client"
-import { getUserToolCount } from "@/lib/tool-limits"
 
 // The parseLocalDate function is no longer needed.
 // Supabase now returns dates with time zones, so we can pass them directly to the client.
@@ -21,15 +20,15 @@ export default async function DashboardPage() {
   console.log("🔑 User authenticated:", user.id)
 
   try {
-    // Ensure user has profile - create if missing
+    // Ensure user has profile - create if missing, and fetch beta status
     const { data: existingProfile } = await supabase
       .from('profiles')
-      .select('id, is_beta_ready')
+      .select('id, is_beta_ready') // ADD: Include beta status
       .eq('user_id', user.id)
       .single()
 
-    let isBetaReady = false
-    
+    let isBetaReady = false // ADD: Track beta status
+
     if (!existingProfile) {
       console.log("🔨 Creating missing profile...")
       const { data: newProfile } = await supabase.from('profiles').insert({
@@ -39,16 +38,13 @@ export default async function DashboardPage() {
         last_name: null,
         avatar_url: null,
         timezone: 'UTC',
-        is_beta_ready: false
+        is_beta_ready: false // ADD: Default beta status
       }).select('is_beta_ready').single()
       
-      isBetaReady = newProfile?.is_beta_ready || false
+      isBetaReady = newProfile?.is_beta_ready || false // ADD: Set beta status
     } else {
-      isBetaReady = existingProfile.is_beta_ready || false
+      isBetaReady = existingProfile.is_beta_ready || false // ADD: Get beta status
     }
-
-    // Get user's tool count
-    const toolCount = await getUserToolCount(user.id)
 
     // Fetch dashboard data using Supabase client
     const [subscriptionsResult, toolsResult, projectToolsResult, projectsResult] = await Promise.all([
@@ -90,6 +86,10 @@ export default async function DashboardPage() {
     console.log("🔧 Tools result:", toolsResult)
     console.log("🔗 Project tools result:", projectToolsResult)
     console.log("📁 Projects result:", projectsResult)
+
+    // ADD: Calculate tool count from existing data
+    const toolCount = toolsResult.data?.length || 0
+    console.log("🔢 Tool count:", toolCount, "Beta ready:", isBetaReady)
 
     // Process subscription data for summary cards
     let totalSpend = 0
@@ -188,8 +188,8 @@ export default async function DashboardPage() {
       <DashboardClient 
         user={{
           ...user,
-          toolCount,
-          isBetaReady
+          toolCount,    // ADD: Pass tool count
+          isBetaReady   // ADD: Pass beta status
         }}
         toolsOverviewData={toolsOverviewData}
         totalSpend={totalSpend}

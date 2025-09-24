@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardHeader from "@/components/dashboard/dashboard-header"
 import ToolForm from "@/components/tools/tool-form"
-import { getUserToolCount, hasReachedToolLimit } from "@/lib/tool-limits"
 
 export default async function NewToolPage() {
   const supabase = createClient()
@@ -17,10 +16,14 @@ export default async function NewToolPage() {
   }
 
   try {
-    // NEW: Check if user has reached tool limit
-    const toolCount = await getUserToolCount(user.id)
-    if (hasReachedToolLimit(toolCount)) {
-      // Redirect to dashboard where they can see the beta signup button
+    // ADD: Simple tool count check
+    const { count: toolCount } = await supabase
+      .from('tools')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
+    // ADD: Redirect if user has 10+ tools
+    if ((toolCount || 0) >= 10) {
       redirect("/dashboard")
     }
 
@@ -79,7 +82,20 @@ export default async function NewToolPage() {
               <p className="text-muted-foreground mb-4">
                 There was an issue loading your email addresses for the form.
               </p>
+              
+              {/* Fallback: Show form with empty emails array */}
+              <div className="mt-6">
+                <ToolForm userEmails={[]} />
+              </div>
             </div>
+
+            {/* Debug info */}
+            <details className="mt-8 text-left">
+              <summary className="cursor-pointer text-sm text-muted-foreground">Debug Info</summary>
+              <pre className="mt-4 p-4 bg-muted rounded text-xs overflow-auto">
+                {JSON.stringify(error, null, 2)}
+              </pre>
+            </details>
           </div>
         </main>
       </div>
