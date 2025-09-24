@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Users, CreditCard, Clock, AlertTriangle, FolderOpen, X } from "lucide-react"
 import Link from "next/link"
-import { formatDisplayDate } from "@/lib/date"
 
 interface ToolOverview {
   toolId: string
@@ -70,55 +69,42 @@ export default function SubscriptionsOverviewCard({
           {trialSubscriptions > 0 && (
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              <span>{trialSubscriptions} free trial{trialSubscriptions !== 1 ? 's' : ''}</span>
+              <span>{trialSubscriptions} free trial{trialSubscriptions !== 1 ? 's' : ''} active</span>
             </div>
           )}
         </div>
 
         {/* Trial Expiration Alerts */}
         {upcomingTrialExpirations.length > 0 && (
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-amber-600">
-              <AlertTriangle className="h-4 w-4" />
-              <span>Trial Alert{upcomingTrialExpirations.length > 1 ? 's' : ''}</span>
-            </div>
-            
-            {upcomingTrialExpirations.map((tool) => {
+          <div className="pt-3 border-t border-gray-200/20">
+            {upcomingTrialExpirations.map(tool => {
               const today = new Date()
               today.setHours(0, 0, 0, 0)
-              
               const trialEndDate = new Date(tool.trialEndDate!)
               trialEndDate.setHours(0, 0, 0, 0)
-              
               const daysUntilExpiry = Math.ceil((trialEndDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
               
-              const expiryText = daysUntilExpiry === 0 
-                ? 'expires today' 
-                : daysUntilExpiry === 1 
-                  ? 'expires tomorrow' 
-                  : `expires in ${daysUntilExpiry} days`
-
               return (
-                <div key={tool.toolId} className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-amber-800">
-                        {tool.toolName} {expiryText}
-                      </p>
-                      <p className="text-xs text-amber-700 mt-1">
-                        ${tool.monthlyCost}/mo starting {formatDisplayDate(trialEndDate)} - Assign projects or cancel
-                      </p>
-                    </div>
+                <div key={tool.toolId} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-orange-500" />
+                    <span className="text-sm font-medium text-orange-600">
+                      Trial Alert: {tool.toolName} expires in {daysUntilExpiry} day{daysUntilExpiry !== 1 ? 's' : ''}
+                    </span>
                   </div>
                   
-                  <div className="flex items-center gap-2 mt-3">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/map">
+                  <div className="text-xs text-muted-foreground mb-2">
+                    ${tool.monthlyCost.toFixed(0)}/mo starting {trialEndDate.toLocaleDateString()} - Assign projects or cancel
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+                      <Link href={`/tools/${tool.toolId}/edit`}>
                         <FolderOpen className="h-3 w-3 mr-1" />
                         Assign to Project
                       </Link>
                     </Button>
-                    <Button variant="outline" size="sm" asChild>
+                    <Button asChild variant="outline" size="sm" className="h-7 text-xs border-orange-200 text-orange-700 hover:bg-orange-50">
                       <Link href={`/tools/${tool.toolId}/edit`}>
                         <X className="h-3 w-3 mr-1" />
                         Cancel Trial
@@ -129,6 +115,12 @@ export default function SubscriptionsOverviewCard({
               )
             })}
           </div>
+        )}
+
+        {totalSubscriptions === 0 && (
+          <p className="text-xs text-muted-foreground">
+            No active subscriptions or trials
+          </p>
         )}
       </CardContent>
     </Card>

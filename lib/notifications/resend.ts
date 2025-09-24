@@ -1,6 +1,5 @@
 import { NotificationTemplate, NotificationResult, SubscriptionForNotification, NotificationType } from "./types"
 import { getNotificationTemplate } from "./templates"
-import { formatDisplayDate } from "@/lib/date"
 
 /**
  * Send email via Resend API
@@ -99,7 +98,12 @@ export async function sendTrialExpiryNotification(
   const template = getNotificationTemplate(type, {
     toolName: subscription.toolName,
     daysUntilExpiry,
-    expiryDate: formatDisplayDate(subscription.trialEndDate),
+    expiryDate: subscription.trialEndDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }),
     userEmail
   })
   
@@ -126,7 +130,12 @@ export async function sendRenewalNotification(
   const template = getNotificationTemplate(type, {
     toolName: subscription.toolName,
     daysUntilRenewal,
-    renewalDate: formatDisplayDate(subscription.renewalDate),
+    renewalDate: subscription.renewalDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }),
     cost: subscription.cost,
     currency: subscription.currency,
     billingCycle: subscription.billingCycle,

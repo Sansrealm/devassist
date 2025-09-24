@@ -1,6 +1,6 @@
 // File: app/tools/[id]/page.tsx
 export const dynamic = 'force-dynamic'
-import { formatDisplayDate } from "@/lib/date"
+
 import { createClient } from "@/lib/supabase/server"
 import { redirect, notFound } from "next/navigation"
 import DashboardHeader from "@/components/dashboard/dashboard-header"
@@ -131,7 +131,7 @@ export default async function ToolPage({ params }: ToolPageProps) {
                         {subscription.status === 'trial' && subscription.trial_end_date && (
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Trial Ends:</span>
-                            <span>{formatDisplayDate(subscription.trial_end_date)}</span>
+                            <span>{new Date(subscription.trial_end_date).toLocaleDateString()}</span>
                           </div>
                         )}
                         {subscription.status === 'active' && subscription.renewal_date && subscription.billing_cycle && (
