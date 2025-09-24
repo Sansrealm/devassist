@@ -1,6 +1,7 @@
 import { NotificationTemplate, NotificationResult, SubscriptionForNotification, NotificationType } from "./types"
 import { getNotificationTemplate } from "./templates"
 import { formatDisplayDate } from "@/lib/date"
+
 /**
  * Send email via Resend API
  */
@@ -99,6 +100,8 @@ export async function sendTrialExpiryNotification(
     toolName: subscription.toolName,
     daysUntilExpiry,
     expiryDate: formatDisplayDate(subscription.trialEndDate),
+    userEmail
+  })
   
   return await sendEmail(userEmail, template)
 }
