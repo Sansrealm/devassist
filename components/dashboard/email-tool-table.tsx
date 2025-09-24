@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MoreHorizontal, ExternalLink } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
+import { formatDisplayDate } from "@/lib/date"
 
 interface EmailToolData {
   emailAddress: string | null
@@ -65,13 +66,9 @@ export default function EmailToolTable({ data }: EmailToolTableProps) {
   }
 
   const formatDate = (date: Date | null) => {
-    if (!date) return "-"
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }).format(new Date(date))
-  }
+  if (!date) return "-"
+  return formatDisplayDate(date)
+}
 
   return (
     <Card>

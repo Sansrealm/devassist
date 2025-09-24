@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
 import { calculateNextRenewalDate, getRenewalDescription } from "@/lib/renewal-dates"
+import { formatDisplayDate } from "@/lib/date"
 
 interface ToolOverview {
   toolId: string
@@ -70,16 +71,9 @@ export default function ToolsOverviewTable({ data }: ToolsOverviewTableProps) {
   }
 
   // CORRECTED: The formatDate function now correctly handles string input
-  const formatDate = (date: string | null) => {
-    if (!date) return "-"
-    const d = new Date(date);
-    const utcDate = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }).format(utcDate)
-  }
+ const formatDate = (date: string | null) => {
+  return formatDisplayDate(date)  
+}
 
   return (
     <Card>

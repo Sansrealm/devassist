@@ -1,6 +1,7 @@
 // lib/renewal-dates.ts
 // FIXED: Timezone issue causing dates to shift by 1 day
 // Now handles date parsing consistently in local timezone
+import { formatDisplayDate } from "@/lib/date"
 export type BillingCycle = 'monthly' | 'yearly' | 'quarterly' | 'one-time'
 
 /**
@@ -105,11 +106,7 @@ export function getRenewalDescription(
   
   const daysDiff = Math.ceil((nextDateOnly.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
   
-  const dateString = new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).format(nextDate)
+  const dateString = formatDisplayDate(nextDateUTC)
 
   if (daysDiff < 0) {
     return `${dateString} (overdue)`
