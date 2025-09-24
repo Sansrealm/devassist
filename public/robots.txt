@@ -1,0 +1,35 @@
+# Robots.txt for Vizibl
+User-agent: *
+Allow: /
+Allow: /sign-in
+Allow: /auth/auth-code-error
+
+# Disallow private/sensitive routes
+Disallow: /dashboard
+Disallow: /settings  
+Disallow: /tools
+Disallow: /projects
+Disallow: /map
+Disallow: /api/
+
+# Disallow auth callback routes (contains sensitive tokens)
+Disallow: /auth/callback
+
+# Allow search engines to crawl static assets
+Allow: /favicon.ico
+Allow: /robots.txt
+Allow: /sitemap.xml
+Allow: /*.css
+Allow: /*.js
+Allow: /*.png
+Allow: /*.jpg
+Allow: /*.jpeg
+Allow: /*.gif
+Allow: /*.svg
+Allow: /*.webp
+
+# Sitemap location
+Sitemap: https://vizibl.live/sitemap.xml
+
+# Crawl delay (optional - adjust based on your server capacity)
+Crawl-delay: 1

@@ -3,6 +3,94 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import SignInForm from "@/components/auth/sign-in-form"
 
+export const dynamic = 'force-dynamic'
+
+// Enhanced Open Graph metadata for sign-in page
+export const metadata: Metadata = {
+  title: "Sign In | Vizibl - Your DevStack Companion",
+  description: "Track your development tools, manage subscriptions, and optimize your dev stack spending. Sign in to get started with smart tool management.",
+  keywords: [
+    "developer tools", 
+    "subscription management", 
+    "dev stack", 
+    "tool tracking", 
+    "software subscriptions",
+    "development productivity",
+    "cost optimization",
+    "SaaS management"
+  ],
+  authors: [{ name: "Vizibl Team" }],
+  creator: "Vizibl",
+  publisher: "Vizibl",
+  robots: "index, follow",
+  
+  // Open Graph tags
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://vizibl.live/sign-in",
+    siteName: "Vizibl",
+    title: "Sign In | Vizibl - Your DevStack Companion",
+    description: "Track your development tools, manage subscriptions, and optimize your dev stack spending. Sign in to get started with smart tool management.",
+    images: [
+      {
+        url: "https://vizibl.live/og-image-sign-in.png", // You'll need to create this
+        width: 1200,
+        height: 630,
+        alt: "Vizibl - Track your development tools and subscriptions",
+        type: "image/png",
+      },
+      {
+        url: "https://vizibl.live/og-image-square.png", // Square version for some platforms
+        width: 400,
+        height: 400,
+        alt: "Vizibl Logo",
+        type: "image/png",
+      }
+    ],
+  },
+
+  // Twitter Card tags
+  twitter: {
+    card: "summary_large_image",
+    site: "@vizibl", // Replace with your actual Twitter handle
+    creator: "@vizibl", // Replace with your actual Twitter handle
+    title: "Sign In | Vizibl - Your DevStack Companion",
+    description: "Track your development tools, manage subscriptions, and optimize your dev stack spending. Sign in to get started.",
+    images: ["https://vizibl.live/og-image-sign-in.png"], // You'll need to create this
+  },
+
+  // Additional metadata
+  applicationName: "Vizibl",
+  referrer: "origin-when-cross-origin",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+
+  // App-specific metadata
+  category: "productivity",
+  classification: "Business Software",
+
+  // Verification tags (add these if you have accounts)
+  // verification: {
+  //   google: "your-google-verification-code",
+  //   other: {
+  //     "facebook-domain-verification": "your-facebook-verification-code"
+  //   }
+  // },
+
+  // Additional structured data
+  other: {
+    "application-name": "Vizibl",
+    "msapplication-TileColor": "#002F71",
+    "msapplication-config": "/browserconfig.xml",
+    "theme-color": "#002F71",
+  }
+}
+
+
 export default async function SignInPage() {
   try {
     // Check if user is already logged in
