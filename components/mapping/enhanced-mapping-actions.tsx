@@ -240,6 +240,9 @@ export default function EnhancedMappingActions({
               <Target className="h-4 w-4" />
               Single Mapping
             </h4>
+            <CardDescription>
+            Select a Project and a tool and Create Mapping. 
+          </CardDescription>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
