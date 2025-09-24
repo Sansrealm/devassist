@@ -31,6 +31,8 @@ interface Project {
 interface User {
   id: string
   email?: string
+  toolCount?: number // NEW: Added tool count
+  isBetaReady?: boolean // NEW: Added beta status
 }
 
 interface DashboardClientProps {
@@ -135,7 +137,11 @@ export default function DashboardClient({
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader user={user} />
+      <DashboardHeader 
+        user={user} 
+        toolCount={user.toolCount}
+        isBetaReady={user.isBetaReady}
+      />
 
       <main className="container mx-auto px-4 py-8 space-y-4">
         {/* Combined Spending and Subscriptions Overview */}

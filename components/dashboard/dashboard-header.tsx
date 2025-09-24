@@ -147,27 +147,70 @@ export default function DashboardHeader({ user, toolCount = 0, isBetaReady = fal
                 <DropdownMenuContent className="w-56 animate-in slide-in-from-top-2" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.user_metadata?.full_name || "User"}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                      <p className="text-sm font-medium leading-none">
+                        {user.user_metadata?.full_name || "User"}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user.email}
+                      </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link href="/settings" className="flex items-center">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    className="cursor-pointer text-red-600 focus:text-red-600"
-                    onClick={() => signOut()}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
+                  <DropdownMenuItem asChild>
+                    <form action={signOut}>
+                      <button type="submit" className="flex w-full items-center cursor-pointer text-destructive focus:text-destructive">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Log out</span>
+                      </button>
+                    </form>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Mobile Menu Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden h-9 w-9 hover:bg-muted/80 transition-colors"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                <Menu className="h-4 w-4" />
+                <span className="sr-only">Open menu</span>
+              </Button>
             </div>
           </div>
+
+          {/* Mobile Navigation */}
+          {mobileMenuOpen && (
+            <div className="md:hidden animate-in slide-in-from-top-2">
+              <div className="border-t border-border/40 pt-4 pb-4 space-y-1">
+                {navigation.map((item) => {
+                  const active = isActive(item.href)
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        active 
+                          ? 'bg-muted text-foreground' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
