@@ -60,7 +60,7 @@ function SubmitButton({ isEditing }: { isEditing?: boolean }) {
     <Button
       type="submit"
       disabled={pending}
-      className="w-full bg-gradient-to-r from-[#002F71] to-[#0A4BA0] hover:from-[#001f4d] hover:to-[#083d87] h-11"
+      className="bg-gradient-to-r from-[#002F71] to-[#0A4BA0] hover:from-[#001f4d] hover:to-[#083d87]"
     >
       {pending ? (
         <>
@@ -164,7 +164,7 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
             {initialData && <input type="hidden" name="id" value={initialData.id} />}
 
             {state?.error && (
-              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded-md text-sm">
                 {state.error}
               </div>
             )}
@@ -174,14 +174,12 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
               {/* Tool Name & Category */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="toolName" className="text-sm font-medium">
-                    Tool Name <span className="text-red-500">*</span>
-                  </Label>
                   <ToolSearchInput
                     value={toolName}
                     onChange={handleToolNameChange}
                     onTemplateSelect={handleTemplateSelect}
                     required
+                    label="Tool Name"
                     placeholder="e.g., Figma, Linear, Vercel"
                     disabled={isEditing}
                   />
@@ -189,7 +187,7 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="category" className="text-sm font-medium">Category</Label>
+                  <Label htmlFor="category">Category</Label>
                   <Select name="category" value={category} onValueChange={setCategory}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -209,7 +207,7 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
 
               {/* Cost */}
               <div className="space-y-2">
-                <Label htmlFor="baseCost" className="text-sm font-medium">Monthly Cost (USD)</Label>
+                <Label htmlFor="baseCost">Monthly Cost (USD)</Label>
                 <Input
                   id="baseCost"
                   name="baseCost"
@@ -219,128 +217,156 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                   placeholder="0.00"
                   value={baseCost}
                   onChange={(e) => setBaseCost(e.target.value)}
-                  className="max-w-xs"
                 />
                 <p className="text-xs text-muted-foreground">
-                  The monthly cost for this tool
+                  Monthly cost for this tool (can be overridden per subscription)
                 </p>
               </div>
 
-              {/* Subscription Type & Billing */}
+              {/* Subscription Type & Details */}
               {showSubscriptionTypeSelector && (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="subscriptionType" className="text-sm font-medium">Subscription Status</Label>
+                    <Label htmlFor="subscriptionType">Subscription Type</Label>
                     <Select value={subscriptionType} onValueChange={setSubscriptionType}>
-                      <SelectTrigger className="max-w-xs">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select subscription type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No subscription</SelectItem>
+                        <SelectItem value="active">Active Subscription</SelectItem>
                         <SelectItem value="trial">Free Trial</SelectItem>
-                        <SelectItem value="active">Paid Subscription</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Choose whether this is an active paid subscription or free trial
+                    </p>
                   </div>
+                </div>
+              )}
 
-                  {/* Date Fields */}
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {showTrialEndDate && (
-                      <div className="space-y-2">
-                        <Label htmlFor="trialEndDate" className="text-sm font-medium">Trial End Date</Label>
-                        <Input
-                          id="trialEndDate"
-                          name="trialEndDate"
-                          type="date"
-                          defaultValue={initialData?.trialEndDate || ""}
-                        />
-                      </div>
-                    )}
-
-                    {showRenewalDate && (
-                      <div className="space-y-2">
-                        <Label htmlFor="renewalDate" className="text-sm font-medium">Next Renewal</Label>
-                        <Input
-                          id="renewalDate"
-                          name="renewalDate"
-                          type="date"
-                          defaultValue={initialData?.renewalDate || ""}
-                        />
-                      </div>
-                    )}
+              {/* Conditional Date Fields */}
+              <div className="grid gap-4 md:grid-cols-2">
+                {showRenewalDate && (
+                  <div className="space-y-2">
+                    <Label htmlFor="renewalDate">Renewal Date</Label>
+                    <Input
+                      id="renewalDate"
+                      name="renewalDate"
+                      type="date"
+                      placeholder="YYYY-MM-DD"
+                      min={new Date().toISOString().split('T')[0]}
+                      defaultValue={initialData?.renewalDate || ""}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      When your subscription renews (must be a future date)
+                    </p>
                   </div>
+                )}
 
-                  {/* Billing Cycle */}
-                  {(showRenewalDate || showTrialEndDate) && (
-                    <div className="space-y-2">
-                      <Label htmlFor="billingCycle" className="text-sm font-medium">Billing Cycle</Label>
-                      <Select name="billingCycle" value={billingCycle} onValueChange={setBillingCycle}>
-                        <SelectTrigger className="max-w-xs">
-                          <SelectValue placeholder="Select billing cycle" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="yearly">Yearly</SelectItem>
-                          <SelectItem value="quarterly">Quarterly</SelectItem>
-                          <SelectItem value="one-time">One-time</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+                {showTrialEndDate && (
+                  <div className="space-y-2">
+                    <Label htmlFor="trialEndDate">Trial End Date</Label>
+                    <Input
+                      id="trialEndDate"
+                      name="trialEndDate"
+                      type="date"
+                      placeholder="YYYY-MM-DD"
+                      min={new Date().toISOString().split('T')[0]}
+                      defaultValue={initialData?.trialEndDate || ""}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      When your free trial expires (must be a future date)
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Billing Cycle */}
+              {(showRenewalDate || showTrialEndDate) && (
+                <div className="space-y-2">
+                  <Label htmlFor="billingCycle">Billing Cycle</Label>
+                  <Select name="billingCycle" value={billingCycle} onValueChange={setBillingCycle}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select billing cycle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                      <SelectItem value="quarterly">Quarterly</SelectItem>
+                      <SelectItem value="one-time">One-time</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    How often you're billed for this tool
+                  </p>
                 </div>
               )}
 
               {/* Email Accounts */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">
-                  Email Accounts <span className="text-red-500">*</span>
-                </Label>
+                <Label>Email Accounts *</Label>
                 
+                {/* Add New Email */}
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="Add new email (e.g., work@company.com)"
+                      type="email"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addTempEmail}
+                      disabled={!newEmail || !isValidEmail(newEmail)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Add emails you use for different tools (personal, work, etc.)
+                  </p>
+                </div>
+
                 {/* Existing Emails */}
                 <div className="space-y-3">
                   {userEmails.map((email) => (
-                    <div key={email.id} className="flex items-center space-x-3 p-3 border rounded-lg bg-gray-50">
+                    <div key={email.id} className="flex items-center space-x-2">
                       <Checkbox 
                         id={`email-${email.id}`} 
                         name="emailIds" 
                         value={email.id}
                         defaultChecked={
                           isEditing 
-                            ? email.isAssociated 
+                            ? email.isAssociated || false 
                             : email.isPrimary
                         }
                       />
-                      <div className="flex-1">
-                        <label 
-                          htmlFor={`email-${email.id}`}
-                          className="text-sm font-medium cursor-pointer"
-                        >
-                          {email.email}
-                        </label>
+                      <Label htmlFor={`email-${email.id}`} className="flex-1">
+                        {email.email}
                         {email.isPrimary && (
-                          <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                            Primary
-                          </span>
+                          <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded">Primary</span>
                         )}
-                      </div>
+                      </Label>
                     </div>
                   ))}
 
                   {/* Temporary Emails */}
-                  {tempEmails.map((email) => (
-                    <div key={email} className="flex items-center space-x-3 p-3 border rounded-lg bg-blue-50">
+                  {tempEmails.map((email, index) => (
+                    <div key={`temp-${index}`} className="flex items-center space-x-2">
                       <Checkbox 
+                        id={`temp-email-${index}`} 
                         name="newEmails" 
                         value={email}
                         defaultChecked={true}
-                        disabled={true}
                       />
-                      <div className="flex-1">
-                        <span className="text-sm font-medium">{email}</span>
-                        <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                          New
-                        </span>
-                      </div>
+                      <Label htmlFor={`temp-email-${index}`} className="flex-1">
+                        {email}
+                        <span className="ml-2 text-xs bg-green-500/10 text-green-600 px-2 py-1 rounded">New</span>
+                      </Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -353,24 +379,9 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                   ))}
                 </div>
 
-                {/* Add New Email */}
-                <div className="flex gap-2">
-                  <Input
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="Add email (e.g., work@company.com)"
-                    type="email"
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addTempEmail}
-                    disabled={!newEmail || !isValidEmail(newEmail)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Select which email accounts this tool should be associated with (at least one required)
+                </p>
               </div>
             </div>
 
@@ -394,7 +405,7 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
               <CollapsibleContent className="space-y-4 pt-4">
                 {/* Description */}
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+                  <Label htmlFor="description">Description</Label>
                   <Textarea
                     id="description"
                     name="description"
@@ -408,7 +419,7 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                 {/* URLs */}
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="websiteUrl" className="text-sm font-medium">Website URL</Label>
+                    <Label htmlFor="websiteUrl">Website URL</Label>
                     <Input
                       id="websiteUrl"
                       name="websiteUrl"
@@ -420,7 +431,7 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="logoUrl" className="text-sm font-medium">Logo URL</Label>
+                    <Label htmlFor="logoUrl">Logo URL</Label>
                     <Input
                       id="logoUrl"
                       name="logoUrl"
@@ -434,8 +445,22 @@ export default function ToolForm({ userEmails, initialData, isEditing = false }:
               </CollapsibleContent>
             </Collapsible>
 
-            {/* Submit Button */}
-            <div className="pt-4">
+            {/* Show warning if no emails exist */}
+            {userEmails.length === 0 && tempEmails.length === 0 && (
+              <div className="bg-orange-50 border border-orange-200 rounded-md p-4">
+                <p className="text-sm text-orange-800">
+                  Please add at least one email address above, or 
+                  <Link href="/settings" className="underline ml-1">
+                    add email in settings
+                  </Link>
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-4">
+              <Button variant="outline" asChild>
+                <Link href="/tools">Cancel</Link>
+              </Button>
               <SubmitButton isEditing={isEditing} />
             </div>
           </form>
