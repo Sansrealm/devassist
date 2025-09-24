@@ -37,6 +37,7 @@ export const profiles = pgTable("profiles", {
   lastName: text("last_name"),
   avatarUrl: text("avatar_url"),
   timezone: text("timezone").default("UTC"),
+  isBetaReady: boolean("is_beta_ready").default(false), 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })

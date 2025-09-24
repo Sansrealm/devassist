@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardClient from "./dashboard-client"
+import { getUserToolCount } from "@/lib/tool-limits"
 
 // The parseLocalDate function is no longer needed.
 // Supabase now returns dates with time zones, so we can pass them directly to the client.
@@ -23,21 +24,31 @@ export default async function DashboardPage() {
     // Ensure user has profile - create if missing
     const { data: existingProfile } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, is_beta_ready')
       .eq('user_id', user.id)
       .single()
 
+    let isBetaReady = false
+    
     if (!existingProfile) {
       console.log("🔨 Creating missing profile...")
-      await supabase.from('profiles').insert({
+      const { data: newProfile } = await supabase.from('profiles').insert({
         id: crypto.randomUUID(),
         user_id: user.id,
         first_name: null,
         last_name: null,
         avatar_url: null,
-        timezone: 'UTC'
-      })
+        timezone: 'UTC',
+        is_beta_ready: false
+      }).select('is_beta_ready').single()
+      
+      isBetaReady = newProfile?.is_beta_ready || false
+    } else {
+      isBetaReady = existingProfile.is_beta_ready || false
     }
+
+    // Get user's tool count
+    const toolCount = await getUserToolCount(user.id)
 
     // Fetch dashboard data using Supabase client
     const [subscriptionsResult, toolsResult, projectToolsResult, projectsResult] = await Promise.all([
@@ -175,7 +186,11 @@ export default async function DashboardPage() {
 
     return (
       <DashboardClient 
-        user={user}
+        user={{
+          ...user,
+          toolCount,
+          isBetaReady
+        }}
         toolsOverviewData={toolsOverviewData}
         totalSpend={totalSpend}
         activeSubscriptions={activeSubscriptions}
