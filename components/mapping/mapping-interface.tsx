@@ -8,9 +8,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Link2, FolderOpen, Settings } from "lucide-react"
+import { Search, Link2, FolderOpen, Settings, Grid3X3, List } from "lucide-react"
 import ProjectToolGrid from "./project-tool-grid"
-import MappingActions from "./mapping-actions"
+import MappingMatrix from "./mapping-matrix"
+import EnhancedMappingActions from "./enhanced-mapping-actions"
 
 interface Project {
   id: string
@@ -44,45 +45,35 @@ interface MappingInterfaceProps {
   existingMappings: Mapping[]
 }
 
-export default function MappingInterface({ projects, toolAccounts, existingMappings }: MappingInterfaceProps) {
+export default function MappingInterface({ 
+  projects, 
+  toolAccounts, 
+  existingMappings 
+}: MappingInterfaceProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedProject, setSelectedProject] = useState<string>("all")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
 
-  // Filter tool accounts based on search and category
-  const filteredToolAccounts = toolAccounts.filter((toolAccount) => {
-    const matchesSearch =
-      toolAccount.toolName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      toolAccount.emailAddress.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || toolAccount.toolCategory === selectedCategory
-    return matchesSearch && matchesCategory
-  })
-
-  // Filter projects based on search
-  const filteredProjects = projects.filter((project) => project.name.toLowerCase().includes(searchTerm.toLowerCase()))
-
-  // Get mappings for a specific project
-  const getMappingsForProject = (projectId: string) => {
-    return existingMappings.filter((mapping) => mapping.projectId === projectId)
-  }
-
-  // Get mappings for a specific tool account
-  const getMappingsForToolAccount = (toolAccountId: string) => {
-    return existingMappings.filter((mapping) => mapping.toolAccountId === toolAccountId)
-  }
-
-  // Check if a tool account is mapped to a project
-  const isMapped = (projectId: string, toolAccountId: string) => {
+  // Helper functions
+  const isMapped = (projectId: string, toolAccountId: string): boolean => {
     return existingMappings.some(
-      (mapping) => mapping.projectId === projectId && mapping.toolAccountId === toolAccountId,
+      (m) => m.projectId === projectId && m.toolAccountId === toolAccountId && m.isActive
     )
+  }
+
+  const getMappingsForProject = (projectId: string) => {
+    return existingMappings.filter((m) => m.projectId === projectId && m.isActive)
+  }
+
+  const getMappingsForToolAccount = (toolAccountId: string) => {
+    return existingMappings.filter((m) => m.toolAccountId === toolAccountId && m.isActive)
   }
 
   const getStatusColor = (status: string | null) => {
     switch (status) {
       case "active":
         return "bg-green-500/10 text-green-600 border-green-500/20"
-      case "paused":
+      case "on_hold":
         return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
       case "completed":
         return "bg-blue-500/10 text-blue-600 border-blue-500/20"
@@ -111,6 +102,22 @@ export default function MappingInterface({ projects, toolAccounts, existingMappi
         return "bg-gray-500/10 text-gray-600 border-gray-500/20"
     }
   }
+
+  // Filter logic
+  const filteredProjects = projects.filter((project) => {
+    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesSearch
+  })
+
+  const filteredToolAccounts = toolAccounts.filter((toolAccount) => {
+    const matchesSearch =
+      toolAccount.toolName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      toolAccount.emailAddress.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory =
+      selectedCategory === "all" || toolAccount.toolCategory === selectedCategory
+    
+    return matchesSearch && matchesCategory
+  })
 
   if (projects.length === 0 || toolAccounts.length === 0) {
     return (
@@ -141,10 +148,17 @@ export default function MappingInterface({ projects, toolAccounts, existingMappi
 
   return (
     <div className="space-y-6">
+      {/* Quick Actions Section - Moved to top for prominence */}
+      <EnhancedMappingActions
+        projects={projects}
+        toolAccounts={toolAccounts}
+        existingMappings={existingMappings}
+      />
+
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
+          <CardTitle className="text-lg">Filters & Search</CardTitle>
           <CardDescription>Filter projects and tools to find what you're looking for</CardDescription>
         </CardHeader>
         <CardContent>
@@ -194,16 +208,45 @@ export default function MappingInterface({ projects, toolAccounts, existingMappi
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="grid" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="grid">Grid View</TabsTrigger>
-          <TabsTrigger value="list">List View</TabsTrigger>
+      {/* Main Mapping Views */}
+      <Tabs defaultValue="matrix" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="matrix" className="flex items-center gap-2">
+            <Grid3X3 className="h-4 w-4" />
+            Matrix View
+          </TabsTrigger>
+          <TabsTrigger value="grid" className="flex items-center gap-2">
+            <FolderOpen className="h-4 w-4" />
+            Project View
+          </TabsTrigger>
+          <TabsTrigger value="list" className="flex items-center gap-2">
+            <List className="h-4 w-4" />
+            List View
+          </TabsTrigger>
         </TabsList>
 
+        {/* Matrix View - New primary view */}
+        <TabsContent value="matrix" className="space-y-6">
+          <MappingMatrix
+            projects={
+              selectedProject === "all" 
+                ? filteredProjects 
+                : filteredProjects.filter(p => p.id === selectedProject)
+            }
+            toolAccounts={filteredToolAccounts}
+            existingMappings={existingMappings}
+            getCategoryColor={getCategoryColor}
+            getStatusColor={getStatusColor}
+          />
+        </TabsContent>
+
+        {/* Grid View - Enhanced project-focused view */}
         <TabsContent value="grid" className="space-y-6">
           <ProjectToolGrid
             projects={
-              selectedProject === "all" ? filteredProjects : filteredProjects.filter((p) => p.id === selectedProject)
+              selectedProject === "all" 
+                ? filteredProjects 
+                : filteredProjects.filter(p => p.id === selectedProject)
             }
             toolAccounts={filteredToolAccounts}
             existingMappings={existingMappings}
@@ -213,6 +256,7 @@ export default function MappingInterface({ projects, toolAccounts, existingMappi
           />
         </TabsContent>
 
+        {/* List View - Side-by-side columns */}
         <TabsContent value="list" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Projects Column */}
@@ -223,11 +267,11 @@ export default function MappingInterface({ projects, toolAccounts, existingMappi
                   Projects ({filteredProjects.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 max-h-[600px] overflow-y-auto">
                 {filteredProjects.map((project) => {
                   const projectMappings = getMappingsForProject(project.id)
                   return (
-                    <div key={project.id} className="p-4 border rounded-lg">
+                    <div key={project.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium">{project.name}</h4>
                         {project.status && (
@@ -239,8 +283,16 @@ export default function MappingInterface({ projects, toolAccounts, existingMappi
                       {project.description && (
                         <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
                       )}
-                      <div className="text-sm text-muted-foreground">
-                        {projectMappings.length} tool{projectMappings.length !== 1 ? "s" : ""} mapped
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-muted-foreground">
+                          {projectMappings.length} tool{projectMappings.length !== 1 ? "s" : ""} mapped
+                        </div>
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={`/map?project=${project.id}`}>
+                            <Settings className="h-4 w-4 mr-1" />
+                            Focus
+                          </a>
+                        </Button>
                       </div>
                     </div>
                   )
@@ -256,11 +308,11 @@ export default function MappingInterface({ projects, toolAccounts, existingMappi
                   Tools ({filteredToolAccounts.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 max-h-[600px] overflow-y-auto">
                 {filteredToolAccounts.map((toolAccount) => {
                   const toolMappings = getMappingsForToolAccount(toolAccount.id)
                   return (
-                    <div key={toolAccount.id} className="p-4 border rounded-lg">
+                    <div key={toolAccount.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-3 mb-2">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={toolAccount.toolLogoUrl || "/placeholder.svg"} alt={toolAccount.toolName} />
@@ -276,8 +328,16 @@ export default function MappingInterface({ projects, toolAccounts, existingMappi
                           </Badge>
                         )}
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        Mapped to {toolMappings.length} project{toolMappings.length !== 1 ? "s" : ""}
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-muted-foreground">
+                          Mapped to {toolMappings.length} project{toolMappings.length !== 1 ? "s" : ""}
+                        </div>
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={`/map?tool=${toolAccount.toolId}`}>
+                            <Link2 className="h-4 w-4 mr-1" />
+                            Focus
+                          </a>
+                        </Button>
                       </div>
                     </div>
                   )
@@ -287,8 +347,6 @@ export default function MappingInterface({ projects, toolAccounts, existingMappi
           </div>
         </TabsContent>
       </Tabs>
-
-      <MappingActions projects={projects} toolAccounts={toolAccounts} existingMappings={existingMappings} />
     </div>
   )
 }
