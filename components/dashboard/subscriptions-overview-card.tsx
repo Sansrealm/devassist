@@ -94,20 +94,20 @@ export default function SubscriptionsOverviewCard({
                   </div>
                   
                   <div className="text-xs text-muted-foreground mb-2">
-                    ${tool.monthlyCost.toFixed(0)}/mo starting {trialEndDate.toLocaleDateString()} - Assign projects or cancel
+                    ${tool.monthlyCost.toFixed(0)}/mo starting {trialEndDate.toLocaleDateString()} - Assign projects
                   </div>
 
                   <div className="flex gap-2">
-                    <Button asChild variant="outline" size="sm" className="h-7 text-xs">
-                      <Link href={`/tools/${tool.toolId}/edit`}>
-                        <FolderOpen className="h-3 w-3 mr-1" />
-                        Assign to Project
-                      </Link>
-                    </Button>
+                   <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+  <Link href={`/map?tool=${tool.toolId}`}>
+    <FolderOpen className="h-3 w-3 mr-1" />
+    Assign to Project
+  </Link>
+</Button>
                     <Button asChild variant="outline" size="sm" className="h-7 text-xs border-orange-200 text-orange-700 hover:bg-orange-50">
                       <Link href={`/tools/${tool.toolId}/edit`}>
                         <X className="h-3 w-3 mr-1" />
-                        Cancel Trial
+                        Edit Tool
                       </Link>
                     </Button>
                   </div>
