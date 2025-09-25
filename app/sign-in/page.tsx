@@ -198,6 +198,45 @@ export default async function SignInPage() {
 
             <div className="relative w-full max-w-lg z-10">
               
+              {/* Connection Lines SVG */}
+              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 600">
+                {/* Line from Communications to Monthly Spend */}
+                <line 
+                  x1="120" y1="80" 
+                  x2="380" y2="220" 
+                  stroke="rgba(6, 182, 212, 0.3)" 
+                  strokeWidth="1" 
+                  strokeDasharray="2,3"
+                />
+                
+                {/* Line from Development to Monthly Spend */}
+                <line 
+                  x1="380" y1="60" 
+                  x2="380" y2="220" 
+                  stroke="rgba(168, 85, 247, 0.3)" 
+                  strokeWidth="1" 
+                  strokeDasharray="2,3"
+                />
+                
+                {/* Line from Design to Monthly Spend */}
+                <line 
+                  x1="80" y1="320" 
+                  x2="380" y2="220" 
+                  stroke="rgba(34, 197, 94, 0.3)" 
+                  strokeWidth="1" 
+                  strokeDasharray="2,3"
+                />
+                
+                {/* Line from Productivity to Monthly Spend */}
+                <line 
+                  x1="140" y1="480" 
+                  x2="380" y2="220" 
+                  stroke="rgba(59, 130, 246, 0.3)" 
+                  strokeWidth="1" 
+                  strokeDasharray="2,3"
+                />
+              </svg>
+              
               {/* Communications Tool Card */}
               <div className="absolute top-8 left-8 bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 shadow-2xl animate-bounce" style={{ animationDuration: '8s', animationDelay: '0s' }}>
                 <div className="flex items-center justify-between">
