@@ -178,10 +178,25 @@ export default async function SignInPage() {
           </div>
         </div>
 
-        {/* Right Side - Floating UI Elements */}
+        {/* Right Side - Floating UI Elements with Dashboard Background */}
         <div className="hidden lg:block relative">
           <div className="relative h-full flex items-center justify-center p-8">
-            <div className="relative w-full max-w-lg">
+            
+            {/* Dashboard Screenshot Background */}
+            <div className="absolute inset-4 rounded-2xl overflow-hidden">
+              <div 
+                className="absolute inset-0 bg-cover bg-center transform scale-110 blur-sm opacity-30"
+                style={{
+                  backgroundImage: `url('/dashboard-screenshot.png')`,
+                  backgroundPosition: 'center center',
+                  backgroundSize: 'cover'
+                }}
+              />
+              {/* Overlay to ensure floating cards pop */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-800/40 to-slate-900/60"></div>
+            </div>
+
+            <div className="relative w-full max-w-lg z-10">
               
               {/* Communications Tool Card */}
               <div className="absolute top-8 left-8 bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 shadow-2xl animate-bounce" style={{ animationDuration: '8s', animationDelay: '0s' }}>
