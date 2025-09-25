@@ -195,7 +195,7 @@ export default async function SignInPage() {
               </div>
 
               {/* Development Tool Card - Purple */}
-              <div className="absolute top-16 right-12 bg-gradient-to-br from-purple-500/20 to-purple-600/30 backdrop-blur-sm border border-purple-400/30 rounded-xl p-4 shadow-2xl animate-pulse" style={{ animationDuration: '6s' }}>
+              <div className="absolute top-4 right-12 bg-gradient-to-br from-purple-500/20 to-purple-600/30 backdrop-blur-sm border border-purple-400/30 rounded-xl p-4 shadow-2xl animate-pulse" style={{ animationDuration: '6s' }}>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs text-purple-300 uppercase tracking-wider font-medium">development</div>
