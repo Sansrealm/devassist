@@ -185,15 +185,15 @@ export default async function SignInPage() {
             {/* Dashboard Screenshot Background */}
             <div className="absolute inset-4 rounded-2xl overflow-hidden">
               <div 
-                className="absolute inset-0 bg-cover bg-center transform scale-110 blur-sm opacity-30"
+                className="absolute inset-0 bg-cover bg-center transform scale-105 opacity-60"
                 style={{
                   backgroundImage: `url('/dashboard-screenshot.png')`,
                   backgroundPosition: 'center center',
                   backgroundSize: 'cover'
                 }}
               />
-              {/* Overlay to ensure floating cards pop */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-800/40 to-slate-900/60"></div>
+              {/* Lighter overlay to ensure floating cards pop */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-slate-800/20 to-slate-900/40"></div>
             </div>
 
             <div className="relative w-full max-w-lg z-10">
