@@ -188,7 +188,7 @@ export default async function SignInPage() {
                 className="absolute inset-0 bg-cover bg-center transform scale-105 opacity-60"
                 style={{
                   backgroundImage: `url('/dashboard-screenshot.png')`,
-                  backgroundPosition: 'center center',
+                  backgroundPosition: 'left center',
                   backgroundSize: 'cover'
                 }}
               />
