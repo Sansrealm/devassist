@@ -281,7 +281,7 @@ export default async function SignInPage() {
               </div>
 
               {/* Productivity Tool Card - Blue Bottom */}
-              <div className="absolute bottom-24 left-16 bg-gradient-to-br from-blue-500/20 to-blue-600/30 backdrop-blur-sm border border-blue-400/30 rounded-xl p-4 shadow-2xl animate-pulse" style={{ animationDuration: '5s' }}>
+              <div className="absolute bottom-14 left-16 bg-gradient-to-br from-blue-500/20 to-blue-600/30 backdrop-blur-sm border border-blue-400/30 rounded-xl p-4 shadow-2xl animate-pulse" style={{ animationDuration: '5s' }}>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs text-blue-300 uppercase tracking-wider font-medium">productivity</div>
