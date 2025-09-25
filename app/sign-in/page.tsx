@@ -194,23 +194,23 @@ export default async function SignInPage() {
                 </div>
               </div>
 
-              {/* Productivity Tool Card - Purple */}
+              {/* Communications Tool Card - Purple */}
               <div className="absolute top-16 right-12 bg-gradient-to-br from-purple-500/20 to-purple-600/30 backdrop-blur-sm border border-purple-400/30 rounded-xl p-4 shadow-2xl animate-pulse" style={{ animationDuration: '6s' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-xs text-purple-300 uppercase tracking-wider font-medium">productivity</div>
+                    <div className="text-xs text-purple-300 uppercase tracking-wider font-medium">communications</div>
                     <div className="text-white font-semibold text-lg">$18.00<span className="text-sm text-purple-200">/month</span></div>
                   </div>
                   <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
                 </div>
               </div>
 
-              {/* Development Tool Card - Green */}
+              {/ Design Tool Card - Green */}
               <div className="absolute top-48 left-4 bg-gradient-to-br from-green-500/20 to-green-600/30 backdrop-blur-sm border border-green-400/30 rounded-xl p-4 shadow-2xl animate-bounce" style={{ animationDuration: '10s', animationDelay: '1s' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-xs text-green-300 uppercase tracking-wider font-medium">development</div>
-                    <div className="text-white font-semibold text-lg">$10.00<span className="text-sm text-green-200">/month</span></div>
+                    <div className="text-xs text-green-300 uppercase tracking-wider font-medium">Design</div>
+                    <div className="text-white font-semibold text-lg">$20.00<span className="text-sm text-green-200">/month</span></div>
                   </div>
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                 </div>
@@ -231,7 +231,7 @@ export default async function SignInPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs text-blue-300 uppercase tracking-wider font-medium">productivity</div>
-                    <div className="text-white font-semibold text-lg">$10.00<span className="text-sm text-blue-200">/month</span></div>
+                    <div className="text-white font-semibold text-lg">$30.00<span className="text-sm text-blue-200">/month</span></div>
                   </div>
                   <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
                 </div>
