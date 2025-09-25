@@ -171,7 +171,7 @@ export default async function SignInPage() {
 
             {/* Brand */}
             <div className="text-center lg:text-left">
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-[#002F71] to-[#0A4BA0] bg-clip-text text-transparent">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-300 to-cyan-400 bg-clip-text text-transparent">
                 Vizibl
               </h2>
             </div>
@@ -183,33 +183,33 @@ export default async function SignInPage() {
           <div className="relative h-full flex items-center justify-center p-8">
             <div className="relative w-full max-w-lg">
               
-              {/* Development Tool Card */}
+              {/* Communications Tool Card */}
               <div className="absolute top-8 left-8 bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 shadow-2xl animate-bounce" style={{ animationDuration: '8s', animationDelay: '0s' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-xs text-slate-400 uppercase tracking-wider font-medium">development</div>
-                    <div className="text-white font-semibold text-lg">$22.00<span className="text-sm text-slate-400">/month</span></div>
+                    <div className="text-xs text-slate-400 uppercase tracking-wider font-medium">communication</div>
+                    <div className="text-white font-semibold text-lg">$18.00<span className="text-sm text-slate-400">/month</span></div>
                   </div>
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
                 </div>
               </div>
 
-              {/* Communications Tool Card - Purple */}
+              {/* Development Tool Card - Purple */}
               <div className="absolute top-16 right-12 bg-gradient-to-br from-purple-500/20 to-purple-600/30 backdrop-blur-sm border border-purple-400/30 rounded-xl p-4 shadow-2xl animate-pulse" style={{ animationDuration: '6s' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-xs text-purple-300 uppercase tracking-wider font-medium">communications</div>
-                    <div className="text-white font-semibold text-lg">$18.00<span className="text-sm text-purple-200">/month</span></div>
+                    <div className="text-xs text-purple-300 uppercase tracking-wider font-medium">development</div>
+                    <div className="text-white font-semibold text-lg">$30.00<span className="text-sm text-purple-200">/month</span></div>
                   </div>
                   <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
                 </div>
               </div>
 
-              {/ Design Tool Card - Green */}
+              {/* Design Tool Card - Green */}
               <div className="absolute top-48 left-4 bg-gradient-to-br from-green-500/20 to-green-600/30 backdrop-blur-sm border border-green-400/30 rounded-xl p-4 shadow-2xl animate-bounce" style={{ animationDuration: '10s', animationDelay: '1s' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-xs text-green-300 uppercase tracking-wider font-medium">Design</div>
+                    <div className="text-xs text-green-300 uppercase tracking-wider font-medium">design</div>
                     <div className="text-white font-semibold text-lg">$20.00<span className="text-sm text-green-200">/month</span></div>
                   </div>
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
@@ -231,7 +231,7 @@ export default async function SignInPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs text-blue-300 uppercase tracking-wider font-medium">productivity</div>
-                    <div className="text-white font-semibold text-lg">$30.00<span className="text-sm text-blue-200">/month</span></div>
+                    <div className="text-white font-semibold text-lg">$20.00<span className="text-sm text-blue-200">/month</span></div>
                   </div>
                   <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
                 </div>
@@ -244,8 +244,8 @@ export default async function SignInPage() {
         <div className="lg:hidden relative px-4 pb-8">
           <div className="relative max-w-sm mx-auto h-40">
             <div className="absolute top-0 left-4 bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-lg p-3 shadow-xl">
-              <div className="text-xs text-slate-400">development</div>
-              <div className="text-white font-semibold">$22.00<span className="text-xs text-slate-400">/month</span></div>
+              <div className="text-xs text-slate-400">communication</div>
+              <div className="text-white font-semibold">$18.00<span className="text-xs text-slate-400">/month</span></div>
             </div>
             
             <div className="absolute top-4 right-8 bg-gradient-to-br from-[#002F71] to-[#0A4BA0] backdrop-blur-sm border border-blue-400/30 rounded-lg p-3 shadow-xl">
@@ -254,8 +254,8 @@ export default async function SignInPage() {
             </div>
 
             <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-gradient-to-br from-green-500/20 to-green-600/30 backdrop-blur-sm border border-green-400/30 rounded-lg p-3 shadow-xl">
-              <div className="text-xs text-green-300">Save $61/mo</div>
-              <div className="text-white font-semibold">8 Active Tools</div>
+              <div className="text-xs text-green-300">Design $20/mo</div>
+              <div className="text-white font-semibold">Development $30/mo</div>
             </div>
           </div>
         </div>
